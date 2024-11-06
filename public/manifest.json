@@ -1,25 +1,62 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
-  "icons": [
+  "manifest_version": 3,
+  "name": "chrome-assist",
+  "version": "0.1.0",
+  "description": "On Device Chrome Assistant powered by Gemini Nano",
+  "icons": {
+    "16": "icons/favicon-16x16.png",
+    "32": "icons/favicon-32x32.png",
+    "48": "icons/android-chrome-192x192.png",
+    "128": "icons/android-chrome-512x512.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"]
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab",
+    "tabs"
+  ],
+  "commands": {
+    "trigger-summarize": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Trigger the Summarize model"
+    },
+    "trigger-translate": {
+      "suggested_key": {
+        "default": "Alt+Shift+A"
+      },
+      "description": "Trigger Translation"
+    },
+    "trigger-write": {
+      "suggested_key": {
+        "default": "Alt+Shift+W"
+      },
+      "description": "Trigger Writing"
+    },
+    "trigger-rewrite": {
+      "suggested_key": {
+        "default": "Alt+Shift+R"
+      },
+      "description": "Trigger Rewriting"
+    }
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icons/favicon-16x16.png",
+      "32": "icons/favicon-32x32.png",
+      "48": "icons/android-chrome-192x192.png",
+      "128": "icons/android-chrome-512x512.png"
+    }
+  }
 }

@@ -1,14 +1,28 @@
 {
-  "name": "chrome-assist-react",
+  "name": "chrome-assist",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@fontsource/roboto": "^5.1.0",
+    "@mui/icons-material": "^6.1.6",
+    "@mui/material": "^6.1.6",
+    "@mui/styled-engine-sc": "^6.1.6",
+    "@radix-ui/react-icons": "^1.3.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/chrome": "^0.0.280",
+    "dompurify": "^3.1.7",
+    "framer-motion": "^11.11.11",
+    "marked": "^14.1.3",
     "react": "^18.3.1",
+    "react-code-blocks": "^0.1.6",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
+    "sonner": "^1.5.0",
+    "styled-components": "^6.1.13",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -34,5 +48,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14"
   }
 }
