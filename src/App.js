@@ -8,6 +8,7 @@ import { handleRewrite } from "./api/rewriteHandler";
 import Settings from "./components/ui/Settings";
 import OutputBox from "./components/ui/OutputBox";
 import LoadingMessage from "./components/ui/LoadingMessage";
+import QuestionBox from "./components/ui/QuestionBox";
 import { Button, Typography } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -19,6 +20,7 @@ export default function App() {
   const [taskIndex, setTaskIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isQuestionBoxOpen, setIsQuestionBoxOpen] = useState(false);
 
   useEffect(() => {
     const handleTriggerSummarize = async (message) => {
@@ -32,16 +34,16 @@ export default function App() {
 
     const handleTriggerWrite = async (message) => {
       console.log("handleTriggerWrite message received");
-      setIsGenerating(true);
-      const result = await handleWrite(message.text);
-      setOutput(result);
-      setIsGenerating(false);
+      setTaskIndex(2);
+      setIsQuestionBoxOpen(true);
     };
-
+    
     const handleTriggerRewrite = async (message) => {
       console.log("handleTriggerRewrite message received");
+      setTaskIndex(2);
       setIsGenerating(true);
       const result = await handleRewrite(message.text);
+      setIsQuestionBoxOpen(true);
       setOutput(result);
       setIsGenerating(false);
     };
@@ -79,8 +81,26 @@ export default function App() {
   }, []);
 
   const handleClearOutput = () => {
+    setIsQuestionBoxOpen(false);
     setOutput("");
   };
+
+  const handleQuestionSubmit = async (question) => {
+    setIsGenerating(true);
+    const result = await handleWrite(question);
+    setOutput(result);
+    setIsGenerating(false);
+  };
+
+  const handleTriggerRewrite = async (message) => {
+    console.log("handleTriggerRewrite message received");
+    setTaskIndex(2);
+    setIsGenerating(true);
+    const result = await handleRewrite(message.text);
+    setIsQuestionBoxOpen(true);
+    setOutput(result);
+    setIsGenerating(false);
+  }
 
   return (
     <div className="flex w-full flex-col items-center mx-auto p-3">
@@ -147,6 +167,18 @@ export default function App() {
 
       <div className="relative w-full">
         <AnimatePresence mode="wait">
+          {isQuestionBoxOpen && (
+            <motion.div
+              key="question"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="w-full mt-2"
+            >
+              <QuestionBox onSubmit={handleQuestionSubmit} />
+            </motion.div>
+          )}
           {isGenerating ? (
             <motion.div
               key="loading"
@@ -166,10 +198,10 @@ export default function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <OutputBox output={output} onClear={handleClearOutput} taskIndex={taskIndex} />
+                <OutputBox output={output} onClear={handleClearOutput} taskIndex={taskIndex} handleTriggerRewrite={handleTriggerRewrite} />
               </motion.div>
             ) : (
-              !isSettingsOpen && (
+              !isSettingsOpen && !isQuestionBoxOpen && (
                 <motion.div
                   key="empty"
                   initial={{ opacity: 0, scale: 0.9 }}

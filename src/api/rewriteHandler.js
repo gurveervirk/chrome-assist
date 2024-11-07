@@ -33,10 +33,10 @@ const promptModel = async (prompt) => {
     throw new Error("Rewrite API unavailable");
   }
 
-  const canRewrite = await window.ai.rewriter.capabilities();
-  if (canRewrite.available === 'no') {
-    throw new Error("AI writer is not supported");
-  }
+  // const canRewrite = await window.ai.assistant.capabilities();
+  // if (canRewrite.available === 'no') {
+  //   throw new Error("AI writer is not supported");
+  // }
 
   try {
     // Create or update the rewriter instance with new settings

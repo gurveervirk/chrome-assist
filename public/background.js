@@ -14,18 +14,18 @@ const defaultSettings = {
       format: "plain-text",
       length: "medium",
   },
-  write: {
+  rewrite: {
       available: {
-          tone: ["formal", "neutral", "casual"],
-          format: ["plain-text", "markdown"],
-          length: ["short", "medium", "long"],
+          tone: ["as-is", "more-formal", "more-casual"],
+          format: ["as-is", "plain-text", "markdown"],
+          length: ["as-is", "shorter", "longer"],
       },
-      tone: "formal",
-      length: "medium",
-      format: "plain-text",
+      tone: "as-is",
+      length: "as-is",
+      format: "as-is",
       context: "",
   },
-  rewrite: {
+  write: {
       available: {
           tone: ["formal", "neutral", "casual"],
           format: ["plain-text", "markdown"],

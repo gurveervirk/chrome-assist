@@ -3,8 +3,9 @@ import { Box, Typography, IconButton } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
+import EditIcon from '@mui/icons-material/Edit';
 
-const OutputBox = ({ output, onClear, taskIndex }) => {
+const OutputBox = ({ output, onClear, taskIndex, handleTriggerRewrite }) => {
   const [copied, setCopied] = useState(false);
   const plainTextOutput = output.replace(/<\/?[^>]+(>|$)/g, ""); // Strip HTML tags
 
@@ -14,8 +15,16 @@ const OutputBox = ({ output, onClear, taskIndex }) => {
     setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
   };
 
+  const handleRewrite = () => {
+    onClear();
+    handleTriggerRewrite(plainTextOutput);
+  };
+
   const getTitle = () => {
-    return taskIndex === 0 ? "Summary" : "Translation";
+    if (taskIndex === 0) return "Summary";
+    if (taskIndex === 1) return "Translation";
+    if (taskIndex === 2) return "Compose";
+    return "Output";
   };
 
   return (
@@ -44,7 +53,7 @@ const OutputBox = ({ output, onClear, taskIndex }) => {
         }}
       >
         <Typography
-          variant="body2"
+          variant="h5"
           sx={{
             background: 'linear-gradient(90deg, #4285F4, #EA4335)',
             WebkitBackgroundClip: 'text',
@@ -75,6 +84,19 @@ const OutputBox = ({ output, onClear, taskIndex }) => {
           >
             {copied ? <CheckIcon /> : <ContentCopyIcon />}
           </IconButton>
+            <IconButton
+              onClick={handleRewrite}
+              sx={{
+                color: '#1A73E8',
+                fontSize: '1rem', // Smaller button size
+                padding: 0.5, // Smaller padding
+                '&:hover': { color: '#1558B0' },
+                '@media (max-width: 600px)': { fontSize: '0.8rem' }, // Responsive size
+              }}
+              aria-label="rewrite"
+            >
+              <EditIcon />
+            </IconButton>
           <IconButton
             onClick={onClear}
             sx={{
