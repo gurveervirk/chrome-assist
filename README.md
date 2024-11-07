@@ -1,70 +1,52 @@
-# Getting Started with Create React App
+# Chrome-Assist
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Chrome-Assist is a powerful, on-device Chrome extension powered by Gemini Nano that provides seamless text assistance capabilities. With a few keyboard shortcuts, users can summarize, translate, rewrite, and compose text directly within their Chrome browser.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Summarize Text**: Generate quick summaries in various formats, such as "tl;dr" or "key points."
+- **Translate Text**: Instantly translate selected text into a wide range of supported languages.
+- **Rewrite Text**: Adjust the tone or style of selected text for different contexts.
+- **Compose Text**: Generate new content with formal, neutral, or casual tones in customizable lengths and formats.
 
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+To install and run Chrome-Assist:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/gurveervirk/chrome-assist.git
+   ```
+2. **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+3. **Build the Project**:
+    ```bash
+    npm run build
+    ```
+4. **Add the Extension to Chrome**:
+    1. Open Chrome and navigate to chrome://extensions.
+    2. Enable Developer mode (toggle in the top-right corner).
+    3. Click Load unpacked and select the build folder from the project.
+    4. Grant Necessary Permissions: Chrome-Assist requires permissions for storage, scripting, and active tabs to function effectively. 
+        
+        **For more details, refer to the [Permissions Documentation](https://docs.google.com/document/d/18otm-D9xhn_XyObbQrc1v7SI-7lBX3ynZkjEpiS1V04/edit?tab=t.0)**
+## Usage
+**Activate Chrome-Assist's features using keyboard shortcuts:**
 
-### `npm test`
+**Summarize**: Press Alt+Shift+S to trigger the summarization model.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Translate**: Press Alt+Shift+A to initiate translation.
 
-### `npm run build`
+**Compose**: Press Alt+Shift+W for text generation.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+**Rewrite**: Press Alt+Shift+R to adjust the tone or structure of selected text.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Upon activation, a popup will display the result, where you can further customize settings for each operation based on format, tone, and length.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Availability
+Chrome-Assist’s language detection API is available behind an experimental flag from Chrome 129+ on desktop platforms and Android. To use this feature:
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Make sure you are on Chrome version 129.0.6639.0 or above.
+We recommend using [Chrome Canary](https://www.google.com/chrome/canary/) or [Chrome Dev channel](https://www.google.com/chrome/dev/?extra=devchannel) for the latest version.
