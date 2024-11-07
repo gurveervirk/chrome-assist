@@ -9,6 +9,12 @@ Chrome-Assist is a powerful, on-device Chrome extension powered by Gemini Nano t
 - **Rewrite Text**: Adjust the tone or style of selected text for different contexts.
 - **Compose Text**: Generate new content with formal, neutral, or casual tones in customizable lengths and formats.
 
+## Availability
+Chrome-Assist’s language detection API is available behind an experimental flag from Chrome 129+ on desktop platforms and Android. To use this feature:
+
+Make sure you are on Chrome version 129.0.6639.0 or above.
+We recommend using [Chrome Canary](https://www.google.com/chrome/canary/) or [Chrome Dev channel](https://www.google.com/chrome/dev/?extra=devchannel) for the latest version.
+
 ## Getting Started
 
 To install and run Chrome-Assist:
@@ -45,8 +51,3 @@ To install and run Chrome-Assist:
 
 Upon activation, a popup will display the result, where you can further customize settings for each operation based on format, tone, and length.
 
-## Availability
-Chrome-Assist’s language detection API is available behind an experimental flag from Chrome 129+ on desktop platforms and Android. To use this feature:
-
-Make sure you are on Chrome version 129.0.6639.0 or above.
-We recommend using [Chrome Canary](https://www.google.com/chrome/canary/) or [Chrome Dev channel](https://www.google.com/chrome/dev/?extra=devchannel) for the latest version.
