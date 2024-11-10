@@ -3,7 +3,7 @@ import { Typography, Box } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 
 const LoadingMessage = ({ isGenerating }) => {
-  const [loadingMessage, setLoadingMessage] = useState("Almost there");
+  const [loadingMessage, setLoadingMessage] = useState("Generating response");
 
   useEffect(() => {
     const loadingMessages = [
@@ -14,7 +14,7 @@ const LoadingMessage = ({ isGenerating }) => {
       "Almost there",
     ];
 
-    let messageIndex = 0;
+    let messageIndex = 1;
     let interval;
 
     if (isGenerating) {
