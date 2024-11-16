@@ -24,8 +24,8 @@ const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
     <Box
       sx={{
         position: 'relative',
-        backgroundColor: '#FFFFFF',
-        color: '#1A73E8',
+        backgroundColor: 'background.default',
+        color: 'text.primary',
         borderRadius: 2,
         p: 2,
         mt: 2,
@@ -49,7 +49,11 @@ const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Type your question here..."
-          sx={{ flexGrow: 1 }}
+          sx={{ 
+            flexGrow: 1,
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+         }}
         />
         <Box
           sx={{

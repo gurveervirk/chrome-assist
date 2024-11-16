@@ -1,7 +1,7 @@
 /* global chrome */
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, List, ListItem, ListItemText, CircularProgress, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, List, ListItem, ListItemText, MenuItem, Select, FormControl, InputLabel, Checkbox, ListItemIcon } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
@@ -14,7 +14,7 @@ import LoadingMessage from './LoadingMessage';
 
 const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   const [copied, setCopied] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('Summary');
+  const [selectedTabs, setSelectedTabs] = useState([]);
   const [outputs, setOutputs] = useState([]);
   const [error, setError] = useState(null);
 
@@ -69,7 +69,8 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   };
 
   const handleTabChange = (event) => {
-    setSelectedTab(event.target.value);
+    const value = event.target.value;
+    setSelectedTabs(typeof value === 'string' ? value.split(',') : value);
   };
 
   const handleSearch = (query) => {
@@ -132,8 +133,8 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
         <Box
           sx={{
             position: 'relative',
-            backgroundColor: '#FFFFFF',
-            color: '#1A73E8',
+            backgroundColor: 'background.default',
+            color: 'text.primary',
             borderRadius: 2,
             p: 2,
             mt: 2,
@@ -227,7 +228,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   };
 
   const renderTabContent = () => {
-    const filteredOutputs = outputs.filter(output => output.type === selectedTab);
+    const filteredOutputs = selectedTabs.length > 0 ? outputs.filter(output => selectedTabs.includes(output.type)) : outputs;
 
     if (filteredOutputs.length === 0) {
       return (
@@ -264,15 +265,55 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
           <InputLabel id="output-type-select-label">Output Type</InputLabel>
           <Select
             labelId="output-type-select-label"
-            value={selectedTab}
+            multiple
+            value={selectedTabs}
             onChange={handleTabChange}
+            renderValue={(selected) =>
+              selected.length === 0 ? (
+                <Box
+                  sx={{
+                    color: 'rgba(0, 0, 0, 0.6)', // Placeholder-like style
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  All
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {selected.join(', ')}
+                </Box>
+              )
+            }
             label="Output Type"
-            sx={{ fontSize: '0.875rem' }}
+            sx={{
+              fontSize: '0.875rem',
+              width: '150px',
+            }}
           >
-            <MenuItem value="Summary" sx={{ fontSize: '0.875rem' }}>Summary</MenuItem>
-            <MenuItem value="Translation" sx={{ fontSize: '0.875rem' }}>Translation</MenuItem>
-            <MenuItem value="Composition" sx={{ fontSize: '0.875rem' }}>Composition</MenuItem>
-            <MenuItem value="Search" sx={{ fontSize: '0.875rem' }}>Search</MenuItem>
+            <MenuItem value="Summary" sx={{ fontSize: '0.875rem' }}>
+              <Checkbox checked={selectedTabs.indexOf('Summary') > -1} />
+              <ListItemText primary="Summary" />
+            </MenuItem>
+            <MenuItem value="Translation" sx={{ fontSize: '0.875rem' }}>
+              <Checkbox checked={selectedTabs.indexOf('Translation') > -1} />
+              <ListItemText primary="Translation" />
+            </MenuItem>
+            <MenuItem value="Composition" sx={{ fontSize: '0.875rem' }}>
+              <Checkbox checked={selectedTabs.indexOf('Composition') > -1} />
+              <ListItemText primary="Composition" />
+            </MenuItem>
+            <MenuItem value="Search" sx={{ fontSize: '0.875rem' }}>
+              <Checkbox checked={selectedTabs.indexOf('Search') > -1} />
+              <ListItemText primary="Search" />
+            </MenuItem>
           </Select>
         </FormControl>
       </Box>

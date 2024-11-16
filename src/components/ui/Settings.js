@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { loadSettings, saveSettings } from "../../api/settingsStorage"; // Import loadSettings and saveSettings
-import { MenuItem, IconButton, Select, Slider, TextField, FormControl, InputLabel, Typography } from "@mui/material";
+import { MenuItem, IconButton, Select, Slider, TextField, FormControl, InputLabel, Typography, Box } from "@mui/material";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
+import { ColorModeContext } from '../../App';
 
 const Settings = ({ isOpen, onClose }) => {
   const [currentTab, setCurrentTab] = useState("prompt"); // Default to "prompt"
   const [settings, setSettings] = useState({}); // State for settings
   const [saved, setSaved] = useState(false); // State to manage saved icon
+  const colorMode = useContext(ColorModeContext);
 
   // Load settings on component mount
   useEffect(() => {
@@ -139,7 +141,15 @@ const Settings = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow">
+    <Box
+      sx={{
+        p: 4,
+        bgcolor: 'background.default',
+        color: 'text.primary',
+        borderRadius: 1,
+        boxShadow: 3,
+      }}
+    >
       <FormControl fullWidth className="mb-4">
         <Typography variant="h6" sx={{
           fontWeight: 'bold',
@@ -173,7 +183,7 @@ const Settings = ({ isOpen, onClose }) => {
           {saved ? <CheckIcon /> : <SaveIcon />} {/* Change icon based on saved state */}
         </IconButton>
       </div>
-    </div>
+    </Box>
   );
 };
 

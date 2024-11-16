@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Typography, IconButton, Tooltip, Box } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FolderIcon from '@mui/icons-material/Folder';
 import CreateIcon from '@mui/icons-material/Create';
 import OutputIcon from '@mui/icons-material/Output';
-import PriorityHighIcon from '@mui/icons-material/PriorityHigh'; // Import PriorityHighIcon for unread output
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import { ColorModeContext } from '../../App';
 
 const Navbar = ({ isGenerating, isBookmarking }) => {
   const [hasUnreadOutput, setHasUnreadOutput] = useState(false);
   const [hasUnreadBookmark, setHasUnreadBookmark] = useState(false);
   const location = useLocation();
+  const colorMode = useContext(ColorModeContext);
 
   useEffect(() => {
     if (isGenerating && location.pathname !== '/output') {
@@ -51,6 +55,12 @@ const Navbar = ({ isGenerating, isBookmarking }) => {
       </Link>
 
       <div className="flex items-center">
+        <Tooltip title="Toggle Theme">
+          <IconButton sx={{ ml: 1 }} onClick={colorMode.toggleColorMode} color="inherit">
+            {colorMode.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Tooltip>
+
         <Tooltip title="Output">
           <Box sx={{ position: 'relative' }}>
             <Link to="/output" onClick={handleOutputClick}>
@@ -70,9 +80,9 @@ const Navbar = ({ isGenerating, isBookmarking }) => {
                 sx={{
                   color: 'red',
                   position: 'absolute',
-                  top: -16,
-                  right: -16,
-                  fontSize: 8,
+                  top: -4,
+                  right: -4,
+                  fontSize: 12,
                 }}
               />
             )}
@@ -113,9 +123,9 @@ const Navbar = ({ isGenerating, isBookmarking }) => {
                 sx={{
                   color: 'red',
                   position: 'absolute',
-                  top: -16,
-                  right: -16,
-                  fontSize: 8,
+                  top: -4,
+                  right: -4,
+                  fontSize: 12,
                 }}
               />
             )}

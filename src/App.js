@@ -1,7 +1,7 @@
 /* global chrome */
 
-import { useState, useEffect } from "react";
-import { MemoryRouter as Router, Route, Routes } from "react-router-dom";
+import { useState, useEffect, createContext, useMemo } from "react";
+import { MemoryRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
 import { promptSummarizeModel } from "./api/summarizeHandler";
 import { handleTranslation } from "./api/translateHandler";
 import { handleWrite } from "./api/writeHandler";
@@ -13,19 +13,22 @@ import QuestionBox from "./components/ui/QuestionBox";
 import Bookmark from './components/ui/Bookmark';
 import Navbar from './components/ui/Navbar';
 import Home from './components/ui/Home';
-import { Divider } from "@mui/material";
+import { Divider, IconButton, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from 'uuid';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 
-export default function App() {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isBookmarking, setIsBookmarking] = useState(false);
-  const [error, setError] = useState(null);
+export const ColorModeContext = createContext({ toggleColorMode: () => {} });
+
+const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmarking, setError, colorMode, theme }) => {
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleTriggerSummarize = async (message) => {
       console.log("handleTriggerSummarize message received");
       setIsGenerating(true);
+      navigate('/output');
       try {
         const result = await promptSummarizeModel(message.text, false);
         const outputData = {
@@ -78,6 +81,7 @@ export default function App() {
 
     const handleTriggerWrite = async (message) => {
       console.log("handleTriggerWrite message received");
+      navigate('/output');
       try {
         const result = await handleWrite(message.text);
         const outputData = {
@@ -97,6 +101,7 @@ export default function App() {
     const handleTriggerRewrite = async (message) => {
       console.log("handleTriggerRewrite message received");
       setIsGenerating(true);
+      navigate('/output');
       try {
         const result = await handleRewrite(message.text);
         const outputData = {
@@ -118,6 +123,7 @@ export default function App() {
     const handleTriggerTranslate = async (message) => {
       console.log("handleTriggerTranslate message received");
       setIsGenerating(true);
+      navigate('/output');
       try {
         const result = await handleTranslation(message.text, "en");
         const outputData = {
@@ -161,10 +167,11 @@ export default function App() {
     return () => {
       chrome.runtime.onMessage.removeListener(messageListener);
     };
-  }, []);
+  }, [navigate, setIsGenerating, setIsBookmarking, setError]);
 
   const handleQuestionSubmit = async (question) => {
     setIsGenerating(true);
+    navigate('/output');
     try {
       const result = await handleWrite(question);
       const outputData = {
@@ -186,6 +193,7 @@ export default function App() {
   const enhanceQuery = async (message) => {
     console.log("enhanceQuery message received");
     setIsGenerating(true);
+    navigate('/output');
     try {
       const searchQuery = message.text;
       const enhancedQueries = await enhanceSearchQueries(searchQuery);
@@ -208,6 +216,7 @@ export default function App() {
   const handleTriggerRewrite = async (message) => {
     console.log("handleTriggerRewrite message received");
     setIsGenerating(true);
+    navigate('/output');
     try {
       const result = await handleRewrite(message.text);
       const outputData = {
@@ -227,12 +236,10 @@ export default function App() {
   };
 
   return (
-    <Router>
-      <div className="flex w-full flex-col items-center mx-auto p-3">
-        <Navbar isGenerating={isGenerating} isBookmarking={isBookmarking} />
-        <Divider className="w-full mt-3" />
-
-        <AnimatePresence mode="wait">
+    <div className="flex w-full flex-col items-center mx-auto p-3">
+      <Navbar isGenerating={isGenerating} isBookmarking={isBookmarking} />
+      <Divider className="w-full mt-3" />
+      <AnimatePresence mode="wait">
         <Routes>
           <Route
             path="/settings"
@@ -300,8 +307,52 @@ export default function App() {
           />
           <Route path="/" element={<Home />} />
         </Routes>
-        </AnimatePresence>
-      </div>
-    </Router>
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default function App() {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [mode, setMode] = useState('light');
+  const colorMode = useMemo(
+    () => ({
+      toggleColorMode: () => {
+        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+      },
+    }),
+    [],
+  );
+
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+        },
+      }),
+    [mode],
+  );
+
+  return (
+    <ColorModeContext.Provider value={{ ...colorMode, mode }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Router>
+          <AppContent
+            isGenerating={isGenerating}
+            setIsGenerating={setIsGenerating}
+            isBookmarking={isBookmarking}
+            setIsBookmarking={setIsBookmarking}
+            setError={setError}
+            colorMode={colorMode}
+            theme={theme}
+          />
+        </Router>
+      </ThemeProvider>
+    </ColorModeContext.Provider>
   );
 }
