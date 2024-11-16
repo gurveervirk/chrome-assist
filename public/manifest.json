@@ -18,12 +18,19 @@
       "js": ["contentScript.js"]
     }
   ],
+  "side_panel": {
+    "default_path": "index.html"
+  },
   "permissions": [
     "storage",
     "scripting",
     "activeTab",
-    "tabs"
+    "bookmarks",
+    "sidePanel",
+    "tabs",
+    "contextMenus"
   ],
+  "host_permissions": ["https://*/*"],
   "commands": {
     "trigger-summarize": {
       "suggested_key": {

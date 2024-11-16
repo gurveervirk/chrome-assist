@@ -1,8 +1,8 @@
 const defaultSettings = {
   prompt: {
-      available: { temperature: [0, 1], topK: [1, 100] },
-      temperature: 0.7,
-      topK: 40,
+      available: { temperature: [0, 1], topK: [1, 8] },
+      temperature: 1,
+      topK: 8,
   },
   summarize: {
       available: {
@@ -174,6 +174,27 @@ const defaultSettings = {
       },
       selectedLanguage: "en",
   },
+  bookmark: {
+      available: {
+          type: ["tl;dr", "key-points", "teaser", "headline"],
+          format: ["plain-text", "markdown"],
+          length: ["short", "medium", "long"],
+          numKeywords: [1, 50],
+      },
+      type: "tl;dr",
+      format: "plain-text",
+      length: "long",
+      titlePrompt:"Generate a clear, concise title capturing the text's core theme, tone, and purpose, appealing to the intended audience. Return only the title." ,
+      keywordsPrompt: "Identify numKeywords relevant keywords that capture the text's main topics, themes, and concepts, enhancing discoverability and search relevance. Return only the keywords as an unordered list in HTML.",
+      numKeywords: 25,
+  },
+  search: {
+    available: {
+      numQueries: [1, 10],
+    },
+    prompt: "You are an advanced AI model designed to generate relevant, context-aware web search queries from a user’s input. Analyze the input to identify key topics, intent, and details, then craft numQueries optimized queries that ensure diverse and accurate results. Focus on understanding the user’s needs—such as finding background information, current data, or alternative perspectives—and create queries that balance specificity and breadth. Avoid overly broad or narrow phrasing, ensuring each query is natural, concise, and directly aligned with the user’s intent while exploring varied angles or subtopics for a well-rounded perspective. Return only the search queries as an unordered list.",
+    numQueries: 5,
+  }
 };
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -186,23 +207,140 @@ chrome.runtime.onInstalled.addListener((details) => {
         console.log("Default settings have been initialized.");
       }
     });
+
+    // Create context menu items for each command
+    chrome.contextMenus.create({
+      id: "trigger-summarize",
+      title: "Summarize Selection",
+      contexts: ["selection"], // Visible when text is selected
+      documentUrlPatterns: ["*://*/*"] // Apply to all URLs
+    });
+
+    chrome.contextMenus.create({
+      id: "trigger-translate",
+      title: "Translate Selection",
+      contexts: ["selection"], // Visible when text is selected
+      documentUrlPatterns: ["*://*/*"] // Apply to all URLs
+    });
+
+    chrome.contextMenus.create({
+      id: "trigger-rewrite",
+      title: "Rewrite Selection",
+      contexts: ["selection"] // Visible when text is selected
+    });
+
+    chrome.contextMenus.create({
+      id: "trigger-write",
+      title: "Write Assistance",
+      contexts: ["editable"] // Visible in editable fields
+    });
+
+    chrome.contextMenus.create({
+      id: "open-sidepanel",
+      title: "Open Side Panel",
+    });
+
+    console.log("Context menus with suggested keys created.");
   }
   else {
-    console.log("chromeAssistsettings already initialized.");
+    console.log("chromeAssistsettings and Context menus already initialized.");
   }
+});
+
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  console.log(`Context menu item clicked: ${info.menuItemId}`);
+
+  try {
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        const activeTab = tabs[0];
+        const tabId = activeTab.id;
+        console.log("open sidepanel");
+        chrome.sidePanel.setOptions({
+          tabId,
+          path: 'index.html',
+          enabled: true
+        });
+        chrome.sidePanel.open({
+          tabId
+        });
+      });
+  
+      console.log("Side panel configured.");
+  } catch (error) {
+      console.error("Failed to configure side panel:", error);
+  }
+  
+  if (!tab) {
+    console.error("No active tab found.");
+    return;
+  }
+
+  const command = info.menuItemId;
+
+  if(command === "open-sidepanel") {
+    return;
+  }
+
+  let text = "";
+
+  // Retrieve selected text if applicable
+  if (info.selectionText) {
+    text = info.selectionText;
+  } else if (command !== "write") {
+    // For non-write commands, fall back to page content if no selection
+    const pageContent = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => document.body.innerText,
+    });
+    text = pageContent[0]?.result || "";
+  }
+
+  
+  // Send message to the tab or handle internally
+  // chrome.runtime.sendMessage({ command, text });
+  // chrome.tabs.sendMessage(tab.id, { command, text });
+
+  setTimeout(() => {
+    chrome.runtime.sendMessage({ command, text });
+    chrome.tabs.sendMessage(tab.id, { command, text });
+  }, 5000);
+  
+  console.log(`Command ${command} executed!`);
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
   console.log(`Shortcut triggered for command: ${command}`);
 
-  await chrome.action.openPopup();
-  console.log("Popup opened!");
-
   let [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  try {
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        const activeTab = tabs[0];
+        const tabId = activeTab.id;
+        console.log("open sidepanel");
+        chrome.sidePanel.setOptions({
+          tabId,
+          path: 'index.html',
+          enabled: true
+        });
+        chrome.sidePanel.open({
+          tabId
+        });
+      });
+  
+      console.log("Side panel configured.");
+  } catch (error) {
+      console.error("Failed to configure side panel:", error);
+  }
 
   // Check if the active tab is a chrome:// page
   if (activeTab.url.startsWith("chrome://")) {
       console.warn("Active tab is a chrome:// URL, aborting operation.");
+      chrome.tabs.sendMessage(activeTab.id, { command, text: "" });
+      chrome.runtime.sendMessage({ command, text: "" });
       return; // Early exit if it's a restricted page
   }
 
@@ -211,9 +349,64 @@ chrome.commands.onCommand.addListener(async (command) => {
       func: () => window.getSelection().toString(),
   });
   
-  const text = selectedText[0]?.result || "";
-  console.log(`Selected text!`);
+  let text = selectedText[0]?.result || "";
+
+  // If no text is selected, select the entire page's main text content
+  if (!text) {
+      const pageText = await chrome.scripting.executeScript({
+          target: { tabId: activeTab.id },
+          func: () => document.body.innerText,
+      });
+      text = pageText[0]?.result || "";
+  }
+
+  console.log(`Selected text! Length: ${text.length}`);
 
   chrome.tabs.sendMessage(activeTab.id, { command, text });
   chrome.runtime.sendMessage({ command, text });
+});
+
+// Listen for new bookmarks
+chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
+  console.log(`New bookmark created: ${bookmark.title} (${bookmark.url})`);
+
+  // Retrieve the content of the bookmarked page
+  let [activeTab] = await chrome.tabs.query({ url: bookmark.url });
+
+  if (!activeTab) {
+    console.warn("No active tab found for the bookmarked URL.");
+    return;
+  }
+
+  const pageText = await chrome.scripting.executeScript({
+    target: { tabId: activeTab.id },
+    func: () => document.body.innerText,
+  });
+
+  let text = pageText[0]?.result || "";
+
+  console.log(`Page content length: ${text.length}`);
+
+  // Retrieve the favicon URL
+  const faviconURL = activeTab.favIconUrl || "";
+
+  // Send the content for summarization
+  const message = {
+    command: "summarize-bookmark",
+    text,
+    bookmarkId: id,
+    bookmarkURL: bookmark.url,
+    faviconURL,
+  };
+
+  chrome.tabs.sendMessage(activeTab.id, message);
+  chrome.runtime.sendMessage(message);
+});
+
+// Listen for deleted bookmarks
+chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
+  console.log(`Bookmark removed: ${id}`);
+
+  // Send a command to delete the bookmark
+  chrome.runtime.sendMessage({ command: "delete-bookmark", bookmarkId: id });
 });

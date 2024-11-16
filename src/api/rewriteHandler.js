@@ -3,6 +3,7 @@
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { loadSettings } from "./settingsStorage"; // Importing the settings functions
+import { promptModel } from "./promptHandler"; // Importing the prompt handler
 
 let reWriter;
 
@@ -26,7 +27,7 @@ const createReWriter = async () => {
 };
 
 // Function to prompt the model and get a response
-const promptModel = async (prompt) => {
+const promptRewriteModel = async (prompt) => {
   if (!prompt) throw new Error("Prompt is required");
 
   if (!window.ai || !window.ai.rewriter) {
@@ -56,10 +57,22 @@ const promptModel = async (prompt) => {
 // Handler function for external use
 export const handleRewrite = async (prompt) => {
   try {
-    const result = await promptModel(prompt);
+    const result = await promptRewriteModel(prompt);
     return result.sanitizedResponse;
   } catch (error) {
     console.error("Error:", error.message);
     throw error;
   }
 };
+
+export const enhanceSearchQueries = async (query) => {
+  try {
+    const settings = await loadSettings();
+    const { numQueries, prompt } = settings.search;
+    const result = await promptModel(prompt.replace('numQueries', numQueries), query);
+    return result;
+  } catch (error) {
+    console.error("Error:", error.message);
+    throw error;
+  }
+}

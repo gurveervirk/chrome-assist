@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 import { Box, TextField, IconButton } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
 
-const QuestionBox = ({ onSubmit }) => {
+const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
   const [question, setQuestion] = useState("");
 
   const handleSubmit = () => {
     if (question.trim()) {
-      onSubmit(question);
+      compose(question);
       setQuestion("");
+    }
+  };
+
+  const handleEnhanceQuery = () => {
+    if (question.trim()) {
+      enhanceQuery({ text: question });
     }
   };
 
@@ -30,32 +38,65 @@ const QuestionBox = ({ onSubmit }) => {
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
         }}
       >
         <TextField
           fullWidth
           multiline
-          rows={2}
+          rows={4}
           variant="outlined"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Type your question here..."
-          sx={{ mb: 2 }}
+          sx={{ flexGrow: 1 }}
         />
-        <IconButton
-          onClick={handleSubmit}
+        <Box
           sx={{
-            color: '#1A73E8',
+            display: 'flex',
+            flexDirection: 'column',
             marginLeft: 1,
-            '&:hover': {
-              color: '#1558B0',
-            },
           }}
-          aria-label="submit"
         >
-          <SendIcon />
-        </IconButton>
+          <IconButton
+            onClick={closeBox}
+            sx={{
+              color: '#1A73E8',
+              '&:hover': {
+                color: '#1558B0',
+              },
+              marginBottom: 1,
+            }}
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
+          <IconButton
+            onClick={handleEnhanceQuery}
+            sx={{
+              color: '#1A73E8',
+              '&:hover': {
+                color: '#1558B0',
+              },
+              marginBottom: 1,
+            }}
+            aria-label="search"
+          >
+            <SearchIcon />
+          </IconButton>
+          <IconButton
+            onClick={handleSubmit}
+            sx={{
+              color: '#1A73E8',
+              '&:hover': {
+                color: '#1558B0',
+              },
+            }}
+            aria-label="submit"
+          >
+            <SendIcon />
+          </IconButton>
+        </Box>
       </Box>
     </Box>
   );

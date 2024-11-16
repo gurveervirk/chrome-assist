@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { loadSettings, saveSettings } from "../../api/settingsStorage"; // Import loadSettings and saveSettings
-import { MenuItem, Button, Select, Slider, TextField, FormControl, InputLabel, Typography } from "@mui/material";
+import { MenuItem, IconButton, Select, Slider, TextField, FormControl, InputLabel, Typography } from "@mui/material";
+import SaveIcon from '@mui/icons-material/Save';
+import CheckIcon from '@mui/icons-material/Check';
 
 const Settings = ({ isOpen, onClose }) => {
   const [currentTab, setCurrentTab] = useState("prompt"); // Default to "prompt"
   const [settings, setSettings] = useState({}); // State for settings
-  const [isSaving, setIsSaving] = useState(false); // State to manage saving process
+  const [saved, setSaved] = useState(false); // State to manage saved icon
 
   // Load settings on component mount
   useEffect(() => {
@@ -37,12 +39,17 @@ const Settings = ({ isOpen, onClose }) => {
     length: "Length",
     tone: "Tone",
     context: "Context",
+    titlePrompt: "Title Prompt",
+    keywordsPrompt: "Keywords Prompt",
+    numKeywords: "Number of Keywords",
+    prompt: "Prompt",
+    numQueries: "Number of Queries",
   };
 
   const renderSetting = (key, value) => {
     const displayName = displayNames[key] || key;
     if(key === "selectedLanguage") return null;
-    if (key === "context") {
+    if (key === "context" || key === "titlePrompt" || key === "keywordsPrompt" || key === "prompt") {
       return (
         <div key={key} className="mb-4">
           <Typography variant="body1" className="block mb-2" style={{ fontWeight: 'bold' }}>{displayName}</Typography>
@@ -125,9 +132,9 @@ const Settings = ({ isOpen, onClose }) => {
 
   // Function to handle save action
   const handleSave = async () => {
-    setIsSaving(true);
     await saveSettings(settings); // Save the settings
-    setIsSaving(false); // Reset the saving state
+    setSaved(true); // Set saved state to true
+    setTimeout(() => setSaved(false), 2000); // Reset saved state after 2 seconds
     onClose(); // Close the settings menu after saving
   };
 
@@ -159,14 +166,12 @@ const Settings = ({ isOpen, onClose }) => {
       })}
 
       <div className="flex justify-end mt-4">
-        <Button
-          variant="contained"
+        <IconButton
           color="primary"
           onClick={handleSave}
-          disabled={isSaving} // Disable while saving
         >
-          {isSaving ? "Saving..." : "Save"} {/* Change button text based on saving state */}
-        </Button>
+          {saved ? <CheckIcon /> : <SaveIcon />} {/* Change icon based on saved state */}
+        </IconButton>
       </div>
     </div>
   );
