@@ -1,5 +1,9 @@
 # Chrome-Assist
 
+<div align="center">
+  <img height="400" width="400" alt="gurveervirk/chrome-assist" src="https://github.com/gurveervirk/chrome-assist/blob/main/public/icons/android-chrome-512x512.png">
+</div>
+
 Chrome-Assist is a powerful, on-device Chrome extension powered by Gemini Nano that provides seamless text assistance capabilities. With a few keyboard shortcuts, users can summarize, translate, rewrite, and compose text directly within their Chrome browser.
 
 ## Features
@@ -8,6 +12,10 @@ Chrome-Assist is a powerful, on-device Chrome extension powered by Gemini Nano t
 - **Translate Text**: Instantly translate selected text into a wide range of supported languages.
 - **Rewrite Text**: Adjust the tone or style of selected text for different contexts.
 - **Compose Text**: Generate new content with formal, neutral, or casual tones in customizable lengths and formats.
+- **Customizable Settings**: Tailor the output based on your preferences, such as length, tone, and format.
+- **On-Device Processing**: All operations are performed locally on your device, ensuring data privacy and security.
+- **Enhance Web Search Queries**: Improve search queries using Gemini Nano, providing better context-rich queries for wider discoverability and reach.
+- **Summarize Bookmarks**: Summarize bookmarked articles for quick reference and recall, with the help of extracted keywords, relevant title and a summary.
 
 ## Availability
 Chrome-Assist’s APIs are available behind an experimental flag from Chrome 129+ on desktop platforms and Android.
@@ -39,15 +47,13 @@ To install and run Chrome-Assist:
         
         **For more details, refer to the [Permissions Documentation](https://docs.google.com/document/d/18otm-D9xhn_XyObbQrc1v7SI-7lBX3ynZkjEpiS1V04/edit?tab=t.0)**
 ## Usage
-**Activate Chrome-Assist's features using keyboard shortcuts:**
+**Via Context Menu**:
+1. Right-click on the selected text or page.
+2. Choose the desired action from the context menu or open the sidepanel.
+3. Done! The output will be displayed in the sidepanel.
 
-**Summarize**: Press Alt+Shift+S to trigger the summarization model.
-
-**Translate**: Press Alt+Shift+A to initiate translation.
-
-**Compose**: Press Alt+Shift+W for text generation.
-
-**Rewrite**: Press Alt+Shift+R to adjust the tone or structure of selected text.
-
-Upon activation, a popup will display the result, where you can further customize settings for each operation based on format, tone, and length.
-
+**Via Keyboard Shortcuts** (Only available after opening the sidepanel):
+- **Summarize**: `Alt + Shift + S`
+- **Translate**: `Alt + Shift + A`
+- **Rewrite**: `Alt + Shift + R`
+- **Compose**: `Alt + Shift + W`
