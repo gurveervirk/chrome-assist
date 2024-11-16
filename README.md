@@ -1,7 +1,7 @@
 # Chrome-Assist
 
 <div align="center">
-  <img height="400" width="400" alt="gurveervirk/chrome-assist" src="https://github.com/gurveervirk/chrome-assist/blob/main/public/icons/android-chrome-512x512.png">
+  <img height="200" width="200" alt="gurveervirk/chrome-assist" src="https://github.com/gurveervirk/chrome-assist/blob/main/public/icons/android-chrome-512x512.png">
 </div>
 
 Chrome-Assist is a powerful, on-device Chrome extension powered by Gemini Nano that provides seamless text assistance capabilities. With a few keyboard shortcuts, users can summarize, translate, rewrite, and compose text directly within their Chrome browser.
