@@ -6,18 +6,17 @@ import { promptSummarizeModel } from "./api/summarizeHandler";
 import { handleTranslation } from "./api/translateHandler";
 import { handleWrite } from "./api/writeHandler";
 import { handleRewrite, enhanceSearchQueries } from "./api/rewriteHandler";
-import { openDatabase, saveBookmark, deleteBookmark, saveOutput } from "./utils/db"; // Import IndexedDB functions
+import { saveBookmark, deleteBookmark, saveOutput } from "./utils/db"; // Import IndexedDB functions
 import Settings from "./components/ui/Settings";
 import OutputBox from "./components/ui/OutputBox";
 import QuestionBox from "./components/ui/QuestionBox";
 import Bookmark from './components/ui/Bookmark';
 import Navbar from './components/ui/Navbar';
 import Home from './components/ui/Home';
-import { Divider, IconButton, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import { Divider, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { v4 as uuidv4 } from 'uuid';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
+import Readability from "@mozilla/readability";
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
@@ -25,18 +24,36 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
   const navigate = useNavigate();
 
   useEffect(() => {
+    const extractMainContent = (doc) => {
+      try{
+        console.log("doc: ", doc);
+        const reader = new Readability(doc.cloneNode(true));
+        const article = reader.parse();
+      
+        return article?.textContent || null;
+      }
+      catch (error) {
+        console.error("Error extracting main content using Readability:", error);
+        return null;
+      }
+    };
+
     const handleTriggerSummarize = async (message) => {
       console.log("handleTriggerSummarize message received");
       setIsGenerating(true);
       navigate('/output');
       try {
-        const result = await promptSummarizeModel(message.text, false);
+        // Attempt to extract main content using Readability
+        const mainContent = extractMainContent(message.html);
+        const textToSummarize = mainContent || message.text; // Fallback to plain text
+
+        const result = await promptSummarizeModel(textToSummarize, false);
         const outputData = {
           id: uuidv4(),
-          input: message.text,
+          input: textToSummarize,
           text: result,
           timestamp: new Date().toISOString(),
-          type: 'Summary'
+          type: 'Summary',
         };
         await saveOutput(outputData);
       } catch (error) {
@@ -50,8 +67,12 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     const handleSummarizeBookmark = async (message) => {
       console.log("handleSummarizeBookmark message received");
       setIsBookmarking(true);
+      navigate('/bookmarks');
       try {
-        const result = await promptSummarizeModel(message.text, true); // Summarize the bookmark
+        const mainContent = extractMainContent(message.html);
+        const textToSummarize = mainContent || message.text; // Fallback to plain text
+
+        const result = await promptSummarizeModel(textToSummarize, true); // Summarize as a bookmark
         const bookmarkData = {
           id: uuidv4(),
           bookmarkID: message.bookmarkID,
@@ -83,13 +104,16 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       console.log("handleTriggerWrite message received");
       navigate('/output');
       try {
-        const result = await handleWrite(message.text);
+        const mainContent = extractMainContent(message.html);
+        const textToWrite = mainContent || message.text;
+
+        const result = await handleWrite(textToWrite);
         const outputData = {
           id: uuidv4(),
-          input: message.text,
+          input: textToWrite,
           text: result,
           timestamp: new Date().toISOString(),
-          type: 'Composition'
+          type: 'Composition',
         };
         await saveOutput(outputData);
       } catch (error) {
@@ -103,13 +127,16 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       setIsGenerating(true);
       navigate('/output');
       try {
-        const result = await handleRewrite(message.text);
+        const mainContent = extractMainContent(message.html);
+        const textToRewrite = mainContent || message.text;
+
+        const result = await handleRewrite(textToRewrite);
         const outputData = {
           id: uuidv4(),
-          input: message.text,
+          input: textToRewrite,
           text: result,
           timestamp: new Date().toISOString(),
-          type: 'Composition'
+          type: 'Composition',
         };
         await saveOutput(outputData);
       } catch (error) {
@@ -125,13 +152,16 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       setIsGenerating(true);
       navigate('/output');
       try {
-        const result = await handleTranslation(message.text, "en");
+        const mainContent = extractMainContent(message.html);
+        const textToTranslate = mainContent || message.text;
+
+        const result = await handleTranslation(textToTranslate, "en");
         const outputData = {
           id: uuidv4(),
-          input: message.text,
+          input: textToTranslate,
           text: result,
           timestamp: new Date().toISOString(),
-          type: 'Translation'
+          type: 'Translation',
         };
         await saveOutput(outputData);
       } catch (error) {
@@ -144,20 +174,27 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
 
     // Add message listeners
     const messageListener = (message) => {
-      if (message.command === "trigger-summarize") {
-        handleTriggerSummarize(message);
-      } else if (message.command === "summarize-bookmark") {
-        handleSummarizeBookmark(message);
-      } else if (message.command === "delete-bookmark") {
-        handleDeleteBookmark(message);
-      } else if (message.command === "trigger-translate") {
-        handleTriggerTranslate(message);
-      } else if (message.command === "trigger-write") {
-        handleTriggerWrite(message);
-      } else if (message.command === "trigger-rewrite") {
-        handleTriggerRewrite(message);
-      } else {
-        console.error("Unknown command:", message.command);
+      switch (message.command) {
+        case "trigger-summarize":
+          handleTriggerSummarize(message);
+          break;
+        case "summarize-bookmark":
+          handleSummarizeBookmark(message);
+          break;
+        case "delete-bookmark":
+          handleDeleteBookmark(message);
+          break;
+        case "trigger-translate":
+          handleTriggerTranslate(message);
+          break;
+        case "trigger-write":
+          handleTriggerWrite(message);
+          break;
+        case "trigger-rewrite":
+          handleTriggerRewrite(message);
+          break;
+        default:
+          console.error("Unknown command:", message.command);
       }
     };
 

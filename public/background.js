@@ -285,6 +285,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 
   let text = "";
+  let html = "";
 
   // Retrieve selected text if applicable
   if (info.selectionText) {
@@ -293,9 +294,14 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     // For non-write commands, fall back to page content if no selection
     const pageContent = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: () => document.body.innerText,
+      func: () => {
+        const html = document; // Full HTML content
+        const textContent = document.body.innerText;   // Inner text of the body
+        return { html, textContent }; // Return both HTML and text
+      },
     });
-    text = pageContent[0]?.result || "";
+    text = pageText[0]?.result?.textContent || "";
+    html = pageText[0]?.result?.html || "";
   }
 
   
@@ -304,8 +310,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   // chrome.tabs.sendMessage(tab.id, { command, text });
 
   setTimeout(() => {
-    chrome.runtime.sendMessage({ command, text });
-    chrome.tabs.sendMessage(tab.id, { command, text });
+    chrome.runtime.sendMessage({ command, text, html });
+    chrome.tabs.sendMessage(tab.id, { command, text, html });
   }, 5000);
   
   console.log(`Command ${command} executed!`);
@@ -350,20 +356,26 @@ chrome.commands.onCommand.addListener(async (command) => {
   });
   
   let text = selectedText[0]?.result || "";
+  let html = "";
 
   // If no text is selected, select the entire page's main text content
   if (!text) {
       const pageText = await chrome.scripting.executeScript({
           target: { tabId: activeTab.id },
-          func: () => document.body.innerText,
+          func: () => {
+        const html = document; // Full HTML content
+        const textContent = document.body.innerText;   // Inner text of the body
+        return { html, textContent }; // Return both HTML and text
+      },
       });
-      text = pageText[0]?.result || "";
+      text = pageText[0]?.result?.textContent || "";
+      html = pageText[0]?.result?.html || "";
   }
 
   console.log(`Selected text! Length: ${text.length}`);
 
-  chrome.tabs.sendMessage(activeTab.id, { command, text });
-  chrome.runtime.sendMessage({ command, text });
+  chrome.tabs.sendMessage(activeTab.id, { command, text, html });
+  chrome.runtime.sendMessage({ command, text, html });
 });
 
 // Listen for new bookmarks
@@ -380,12 +392,17 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
 
   const pageText = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id },
-    func: () => document.body.innerText,
+    func: () => {
+        const html = document; // Full HTML content
+        const textContent = document.body.innerText;   // Inner text of the body
+        return { html, textContent }; // Return both HTML and text
+      },
   });
 
-  let text = pageText[0]?.result || "";
+  let text = pageText[0]?.result?.textContent || "";
+  let html = pageText[0]?.result?.html || "";
 
-  console.log(`Page content length: ${text.length}`);
+  console.log("Retrieved page content for summarization.");
 
   // Retrieve the favicon URL
   const faviconURL = activeTab.favIconUrl || "";
@@ -394,6 +411,7 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
   const message = {
     command: "summarize-bookmark",
     text,
+    html,
     bookmarkId: id,
     bookmarkURL: bookmark.url,
     faviconURL,
