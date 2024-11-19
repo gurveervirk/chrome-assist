@@ -54,8 +54,8 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleRewrite = (text) => {
-    handleTriggerRewrite(text);
+  const handleRewrite = (text, id, type) => {
+    handleTriggerRewrite(text, id, type);
   };
 
   const handleDelete = async (id) => {
@@ -195,7 +195,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
                 {copied ? <CheckIcon fontSize='small'/> : <ContentCopyIcon fontSize='small'/>}
               </IconButton>
               <IconButton
-                onClick={() => handleRewrite(output.text)}
+                onClick={() => handleRewrite(output.text, output.id, output.type)}
                 sx={{
                   color: '#1A73E8',
                   padding: 0.5,
