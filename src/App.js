@@ -206,11 +206,11 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     };
   }, [navigate, setIsGenerating, setIsBookmarking, setError]);
 
-  const handleQuestionSubmit = async (question) => {
+  const handleQuestionSubmit = async (question, tone = null, length = null) => {
     setIsGenerating(true);
     navigate('/output');
     try {
-      const result = await handleWrite(question);
+      const result = await handleWrite(question, tone, length);
       const outputData = {
         id: uuidv4(),
         input: question,
