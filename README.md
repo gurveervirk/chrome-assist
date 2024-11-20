@@ -80,4 +80,4 @@ You may also build the extension by cloning this repository and start from the 2
 
 ---
 
-💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**! Download the **first release** now and transform your browsing experience. 🌟  
+💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**! Download the **latest release** now and transform your browsing experience. 🌟  
