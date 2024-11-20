@@ -28,6 +28,7 @@ const createReWriter = async () => {
 
 // Function to prompt the model and get a response
 const promptRewriteModel = async (prompt) => {
+  console.log("Prompt: ", prompt);
   if (!prompt) throw new Error("Prompt is required");
 
   if (!window.ai || !window.ai.rewriter) {
@@ -57,6 +58,7 @@ const promptRewriteModel = async (prompt) => {
 // Handler function for external use
 export const handleRewrite = async (prompt) => {
   try {
+    console.log("Prompt: ", prompt);
     const result = await promptRewriteModel(prompt);
     return result.sanitizedResponse;
   } catch (error) {

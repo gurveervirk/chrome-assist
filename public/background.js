@@ -23,7 +23,7 @@ const defaultSettings = {
       tone: "as-is",
       length: "as-is",
       format: "as-is",
-      context: "",
+      context: "I am.",
   },
   write: {
       available: {
@@ -34,7 +34,7 @@ const defaultSettings = {
       tone: "formal",
       length: "medium",
       format: "plain-text",
-      context: "",
+      context: "I am.",
   },
   detect: {
       languageMapping: {

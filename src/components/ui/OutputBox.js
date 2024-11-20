@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LoadingMessage from './LoadingMessage';
 
 const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState({});
   const [selectedTabs, setSelectedTabs] = useState([]);
   const [outputs, setOutputs] = useState([]);
   const [error, setError] = useState(null);
@@ -48,13 +48,16 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     }
   }, [isGenerating]);
 
-  const handleCopy = (text) => {
+  const handleCopy = (text, id) => {
+    // Clean text before copying
+    text = text.replace(/<[^>]*>?/gm, '');
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied((prevCopied) => ({ ...prevCopied, [id]: true }));
+    setTimeout(() => setCopied((prevCopied) => ({ ...prevCopied, [id]: false })), 2000);
   };
 
   const handleRewrite = (text, id, type) => {
+    console.log('Rewrite:', text, id, type);
     handleTriggerRewrite(text, id, type);
   };
 
@@ -99,19 +102,46 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
               }}
             >
               <ListItemText primary={query} />
-              <IconButton
-                edge="end"
-                aria-label="search"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSearch(query);
-                }}
-                style={{
-                  color: '#1A73E8',
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: 1,
                 }}
               >
-                <SearchIcon />
-              </IconButton>
+                <Tooltip title="Search">
+                  <IconButton
+                    edge="end"
+                    aria-label="search"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSearch(query);
+                    }}
+                    style={{
+                      color: '#1A73E8',
+                    }}
+                  >
+                    <SearchIcon />
+                  </IconButton>
+                </Tooltip>
+                {/* <Tooltip title="Copy to clipboard">
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopy(output.text, output.id);
+                    }}
+                    sx={{
+                      color: copied[output.id] ? 'green' : '#1A73E8',
+                      padding: 0.5,
+                      transition: 'color 0.3s',
+                    }}
+                    aria-label="copy"
+                  >
+                    {copied[output.id] ? <CheckIcon fontSize='small'/> : <ContentCopyIcon fontSize='small'/>}
+                  </IconButton>
+                </Tooltip> */}
+              </Box>
             </ListItem>
           ))}
         </List>
@@ -141,7 +171,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
             width: '100%',
             boxShadow: 3,
             border: '2px solid #1A73E8',
-            textAlign: 'center',
+            // textAlign: 'center',
           }}
         >
           <Box
@@ -183,39 +213,49 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
                   <InfoIcon fontSize='small'/>
                 </IconButton>
               </Tooltip>
-              <IconButton
-                onClick={() => handleCopy(output.text)}
-                sx={{
-                  color: copied ? 'green' : '#1A73E8',
-                  padding: 0.5,
-                  transition: 'color 0.3s',
-                }}
-                aria-label="copy"
-              >
-                {copied ? <CheckIcon fontSize='small'/> : <ContentCopyIcon fontSize='small'/>}
-              </IconButton>
-              <IconButton
-                onClick={() => handleRewrite(output.text, output.id, output.type)}
-                sx={{
-                  color: '#1A73E8',
-                  padding: 0.5,
-                  '&:hover': { color: '#1558B0' },
-                }}
-                aria-label="rewrite"
-              >
-                <EditIcon fontSize='small'/>
-              </IconButton>
-              <IconButton
-                onClick={() => handleDelete(output.id)}
-                sx={{
-                  color: '#1A73E8',
-                  padding: 0.5,
-                  '&:hover': { color: 'red' },
-                }}
-                aria-label="delete"
-              >
-                <DeleteIcon fontSize='small'/>
-              </IconButton>
+            {output.type !== 'Search' && (
+              <>
+                <Tooltip title="Copy to clipboard">
+                  <IconButton
+                    onClick={() => handleCopy(output.text, output.id)}
+                    sx={{
+                      color: copied[output.id] ? 'green' : '#1A73E8',
+                      padding: 0.5,
+                      transition: 'color 0.3s',
+                    }}
+                    aria-label="copy"
+                  >
+                    {copied[output.id] ? <CheckIcon fontSize='small'/> : <ContentCopyIcon fontSize='small'/>}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Rewrite">
+                  <IconButton
+                    onClick={() => handleRewrite(output.text, output.id, output.type)}
+                    sx={{
+                      color: '#1A73E8',
+                      padding: 0.5,
+                      '&:hover': { color: '#1558B0' },
+                    }}
+                    aria-label="rewrite"
+                  >
+                    <EditIcon fontSize='small'/>
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+              <Tooltip title="Delete">
+                <IconButton
+                  onClick={() => handleDelete(output.id)}
+                  sx={{
+                    color: '#1A73E8',
+                    padding: 0.5,
+                    '&:hover': { color: 'red' },
+                  }}
+                  aria-label="delete"
+                >
+                  <DeleteIcon fontSize='small'/>
+                </IconButton>
+              </Tooltip>
             </Box>
           </Box>
           {content}

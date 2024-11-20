@@ -13,11 +13,16 @@ export const createWriterSession = async (tone, length, format, context) => {
 export const handleWrite = async (prompt, chosenTone = null, chosenLength = null) => {
   if (!prompt) throw new Error("Prompt is required");
 
-  const storedSettings = await loadSettings();
-  const { tone, length, format, context } = storedSettings.write;
+  try {
+    const storedSettings = await loadSettings();
+    const { tone, length, format, context } = storedSettings.write;
 
-  await createWriterSession(chosenTone === null ? tone : chosenTone, chosenLength === null ? length : chosenLength, format, context);
+    await createWriterSession(chosenTone === null ? tone : chosenTone, chosenLength === null ? length : chosenLength, format, context);
 
-  const fullResponse = await writer.write(prompt);
-  return DOMPurify.sanitize(marked.parse(fullResponse));
+    const fullResponse = await writer.write(prompt);
+    return DOMPurify.sanitize(marked.parse(fullResponse));
+  } catch (error) {
+    console.error("Error during writing process:", error);
+    throw new Error("Failed to process the writing request.");
+  }
 };

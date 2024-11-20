@@ -23,3 +23,5 @@ yarn-debug.log*
 yarn-error.log*
 
 /old_working_build
+
+build.zip

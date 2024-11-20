@@ -252,13 +252,16 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
 
   const handleTriggerRewrite = async (message, messageID = null, messageType = null) => {
     console.log("handleTriggerRewrite message received");
+    console.log("messageID: ", messageID);
+    console.log("messageType: ", messageType);
+    console.log("message: ", message);
     setIsGenerating(true);
     navigate('/output');
     try {
-      const result = await handleRewrite(message.text);
+      const result = await handleRewrite(message);
       const outputData = {
         id: messageID || uuidv4(),
-        input: message.text,
+        input: message,
         text: result,
         timestamp: new Date().toISOString(),
         type: messageType || 'Composition'
