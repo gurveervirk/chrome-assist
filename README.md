@@ -1,3 +1,7 @@
+Here’s the updated README with a link to the Wiki:  
+
+---
+
 # 🌟 Chrome-Assist: Your On-Device Browser Assistant 🌟  
 
 Chrome-Assist is a powerful, **on-device Chrome extension** powered by **Gemini Nano**, designed to streamline your text-related tasks. With a few keyboard shortcuts, you can effortlessly **summarize**, **translate**, **rewrite**, and **compose** text directly in your Chrome browser.  
@@ -80,4 +84,8 @@ You may also build the extension by cloning this repository and start from the 2
 
 ---
 
-💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**! Download the **latest release** now and transform your browsing experience. 🌟  
+💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**!  
+
+For more details on setup and features, visit the **[Wiki](https://github.com/gurveervirk/chrome-assist/wiki)**.  
+
+Download the **latest release** now and transform your browsing experience. 🌟  
