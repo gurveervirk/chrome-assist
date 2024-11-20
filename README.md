@@ -45,30 +45,24 @@ Chrome-Assist is a powerful, **on-device Chrome extension** powered by **Gemini 
 
 ## 🚀 Getting Started  
 
-To install and run Chrome-Assist:  
+### Install the First Release  
 
-1. **Clone the Repository**:  
-   ```bash
-   git clone https://github.com/gurveervirk/chrome-assist.git
-   ```  
+The **first release** of Chrome-Assist is now available! 🎉  
+Simply download the build from the **[Releases Section](https://github.com/gurveervirk/chrome-assist/releases)** and follow these steps to get started:  
 
-2. **Install Dependencies**:  
-   ```bash
-   npm install
-   ```  
+1. **Download the Latest Build**:  
+   Download the ZIP file from the release page.  
 
-3. **Build the Project**:  
-   ```bash
-   npm run build
-   ```  
+2. **Unpack and Load the Extension**:  
+   1. Extract the ZIP file to a local folder.  
+   2. Open **Chrome** and navigate to `chrome://extensions`.  
+   3. Enable **Developer mode** (toggle in the top-right corner).  
+   4. Click **Load unpacked** and select the extracted folder.  
 
-4. **Add the Extension to Chrome**:  
-   1. Open **Chrome** and navigate to `chrome://extensions`.  
-   2. Enable **Developer mode** (toggle in the top-right corner).  
-   3. Click **Load unpacked** and select the `build` folder from the project.  
-   4. 🛡️ **Grant Necessary Permissions**: Chrome-Assist requires permissions for **storage**, **scripting**, and **active tabs**.  
+3. 🛡️ **Grant Necessary Permissions**:  
+   Chrome-Assist requires permissions for **storage**, **scripting**, and **active tabs**.  
 
-📘 **For more details, refer to the [Permissions Documentation](https://docs.google.com/document/d/18otm-D9xhn_XyObbQrc1v7SI-7lBX3ynZkjEpiS1V04/edit?tab=t.0)**  
+You may also build the extension by cloning this repository and start from the 2nd step above.
 
 ---
 
@@ -87,4 +81,4 @@ To install and run Chrome-Assist:
 
 ---
 
-💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**! 🌟  
+💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**! Download the **first release** now and transform your browsing experience. 🌟  
