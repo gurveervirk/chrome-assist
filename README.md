@@ -45,10 +45,9 @@ Chrome-Assist is a powerful, **on-device Chrome extension** powered by **Gemini 
 
 ## 🚀 Getting Started  
 
-### Install the First Release  
+### Install the Latest Release  
 
-The **first release** of Chrome-Assist is now available! 🎉  
-Simply download the build from the **[Releases Section](https://github.com/gurveervirk/chrome-assist/releases)** and follow these steps to get started:  
+Simply download the latest build from the **[Releases Section](https://github.com/gurveervirk/chrome-assist/releases)** and follow these steps to get started:  
 
 1. **Download the Latest Build**:  
    Download the ZIP file from the release page.  
