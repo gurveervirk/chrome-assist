@@ -6,7 +6,7 @@ import { promptSummarizeModel } from "./api/summarizeHandler";
 import { handleTranslation } from "./api/translateHandler";
 import { handleWrite } from "./api/writeHandler";
 import { handleRewrite, enhanceSearchQueries } from "./api/rewriteHandler";
-import { saveBookmark, deleteBookmark, saveOutput } from "./utils/db"; // Import IndexedDB functions
+import { saveBookmark, deleteBookmarkByActualID, saveOutput } from "./utils/db"; // Import IndexedDB functions
 import Settings from "./components/ui/Settings";
 import OutputBox from "./components/ui/OutputBox";
 import QuestionBox from "./components/ui/QuestionBox";
@@ -20,14 +20,40 @@ import Readability from "@mozilla/readability";
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
-const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmarking, setError, colorMode, theme }) => {
+const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmarking, setError }) => {
   const navigate = useNavigate();
+  const [tabId, setTabId] = useState(null);
 
   useEffect(() => {
+    // Query for the active tab and set tabId
+    const fetchTabId = async () => {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length > 0) {
+          const currentTab = tabs[0];
+          console.log("currentTab: ", currentTab);
+          setTabId(currentTab.id);
+        } else {
+          console.error("No active tab found.");
+        }
+      } catch (error) {
+        console.error("Error querying tabs:", error);
+      }
+    };
+  
+    fetchTabId();
+  }, []);
+
+  useEffect(() => {
+    if (tabId === null) {
+      console.log("tabId not yet set. Waiting...");
+      return;
+    }
     const extractMainContent = (doc) => {
       try{
-        console.log("doc: ", doc);
-        const reader = new Readability(doc.cloneNode(true));
+        const parser = new DOMParser();
+        const htmlDoc = parser.parseFromString(doc, 'text/html');
+        const reader = new Readability(htmlDoc);
         const article = reader.parse();
       
         return article?.textContent || null;
@@ -44,7 +70,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       navigate('/output');
       try {
         // Attempt to extract main content using Readability
-        const mainContent = extractMainContent(message.html);
+        let mainContent = message.html ? extractMainContent(message.html) : null;
         const textToSummarize = mainContent || message.text; // Fallback to plain text
 
         const result = await promptSummarizeModel(textToSummarize, false);
@@ -69,13 +95,13 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       setIsBookmarking(true);
       navigate('/bookmarks');
       try {
-        const mainContent = extractMainContent(message.html);
+        let mainContent = (message.html && extractMainContent(message.html)) || null;
         const textToSummarize = mainContent || message.text; // Fallback to plain text
 
         const result = await promptSummarizeModel(textToSummarize, true); // Summarize as a bookmark
         const bookmarkData = {
           id: uuidv4(),
-          bookmarkID: message.bookmarkID,
+          bookmarkID: message.bookmarkId,
           url: message.bookmarkURL,
           favicon: message.faviconURL,
           ...result,
@@ -92,8 +118,10 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     const handleDeleteBookmark = async (message) => {
       console.log("handleDeleteBookmark message received");
       try {
-        await deleteBookmark(message.bookmarkID);
-        console.log("Bookmark deleted with ID:", message.bookmarkID);
+        setIsBookmarking(true);
+        await deleteBookmarkByActualID(String(message.bookmarkId));
+        setIsBookmarking(false);
+        console.log("Bookmark deleted with ID:", message.bookmarkId);
       } catch (error) {
         console.error("Error deleting bookmark:", error);
         setError("Failed to delete bookmark.");
@@ -104,7 +132,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       console.log("handleTriggerWrite message received");
       navigate('/output');
       try {
-        const mainContent = extractMainContent(message.html);
+        let mainContent = (message.html && extractMainContent(message.html)) || null;
         const textToWrite = mainContent || message.text;
 
         const result = await handleWrite(textToWrite);
@@ -127,7 +155,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       setIsGenerating(true);
       navigate('/output');
       try {
-        const mainContent = extractMainContent(message.html);
+        let mainContent = (message.html && extractMainContent(message.html)) || null;
         const textToRewrite = mainContent || message.text;
 
         const result = await handleRewrite(textToRewrite);
@@ -152,7 +180,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
       setIsGenerating(true);
       navigate('/output');
       try {
-        const mainContent = extractMainContent(message.html);
+        let mainContent = (message.html && extractMainContent(message.html)) || null;
         const textToTranslate = mainContent || message.text;
 
         const result = await handleTranslation(textToTranslate, "en");
@@ -174,27 +202,33 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
 
     // Add message listeners
     const messageListener = (message) => {
-      switch (message.command) {
-        case "trigger-summarize":
-          handleTriggerSummarize(message);
-          break;
-        case "summarize-bookmark":
-          handleSummarizeBookmark(message);
-          break;
-        case "delete-bookmark":
-          handleDeleteBookmark(message);
-          break;
-        case "trigger-translate":
-          handleTriggerTranslate(message);
-          break;
-        case "trigger-write":
-          handleTriggerWrite(message);
-          break;
-        case "trigger-rewrite":
-          handleTriggerRewrite(message);
-          break;
-        default:
-          console.error("Unknown command:", message.command);
+      if(message.command === "delete-bookmark" || message.tabId === tabId) {
+        console.log("Received message from background:", message);
+        switch (message.command) {
+          case "trigger-summarize":
+            handleTriggerSummarize(message);
+            break;
+          case "summarize-bookmark":
+            handleSummarizeBookmark(message);
+            break;
+          case "delete-bookmark":
+            handleDeleteBookmark(message);
+            break;
+          case "trigger-translate":
+            handleTriggerTranslate(message);
+            break;
+          case "trigger-write":
+            handleTriggerWrite(message);
+            break;
+          case "trigger-rewrite":
+            handleTriggerRewrite(message);
+            break;
+          default:
+            console.error("Unknown command:", message.command);
+        }
+      }
+      else {
+        console.log(`Message not for the current tab. Ignoring as tabId ${tabId} does not match message tabId ${message.tabId}`);
       }
     };
 
@@ -204,7 +238,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     return () => {
       chrome.runtime.onMessage.removeListener(messageListener);
     };
-  }, [navigate, setIsGenerating, setIsBookmarking, setError]);
+  }, [navigate, setIsGenerating, setIsBookmarking, setError, tabId]);
 
   const handleQuestionSubmit = async (question, tone = null, length = null) => {
     setIsGenerating(true);

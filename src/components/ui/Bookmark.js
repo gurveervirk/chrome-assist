@@ -45,7 +45,9 @@ const Bookmark = ({ isBookmarking }) => {
   const handleDelete = async (id) => {
     try {
       await deleteBookmark(id);
-      setBookmarks(bookmarks.filter(bookmark => bookmark.id !== id));
+      // setBookmarks(bookmarks.filter(bookmark => bookmark.id !== id));
+      const data = await fetchBookmarks();
+      setBookmarks(data);
     } catch (err) {
       setError('Failed to delete bookmark');
       console.error(err);

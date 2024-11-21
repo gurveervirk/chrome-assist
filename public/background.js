@@ -254,17 +254,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   console.log(`Context menu item clicked: ${info.menuItemId}`);
 
   try {
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        const activeTab = tabs[0];
-        const tabId = activeTab.id;
-        console.log("open sidepanel");
+      chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
+        const tabId = tab.id;
         chrome.sidePanel.setOptions({
           tabId,
-          path: 'index.html',
+          path: 'index.html?tabId=' + tabId,
           enabled: true
         });
-        chrome.sidePanel.open({
-          tabId
+        await chrome.sidePanel.open({
+          tabId: tabId
         });
       });
   
@@ -292,27 +290,23 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     text = info.selectionText;
   } else if (command !== "write") {
     // For non-write commands, fall back to page content if no selection
-    const pageContent = await chrome.scripting.executeScript({
+    const pageText = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: () => {
-        const html = document; // Full HTML content
+        const html = document.documentElement.outerHTML; // Full HTML content
         const textContent = document.body.innerText;   // Inner text of the body
         return { html, textContent }; // Return both HTML and text
       },
     });
     text = pageText[0]?.result?.textContent || "";
     html = pageText[0]?.result?.html || "";
+    console.log(html);
+    console.log(typeof html);
   }
 
-  
-  // Send message to the tab or handle internally
-  // chrome.runtime.sendMessage({ command, text });
-  // chrome.tabs.sendMessage(tab.id, { command, text });
-
   setTimeout(() => {
-    chrome.runtime.sendMessage({ command, text, html });
-    chrome.tabs.sendMessage(tab.id, { command, text, html });
-  }, 5000);
+    chrome.runtime.sendMessage({ command, text, html, tabId: tab.id });
+  }, 2000);
   
   console.log(`Command ${command} executed!`);
 });
@@ -323,17 +317,15 @@ chrome.commands.onCommand.addListener(async (command) => {
   let [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   try {
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        const activeTab = tabs[0];
+      chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
         const tabId = activeTab.id;
-        console.log("open sidepanel");
         chrome.sidePanel.setOptions({
           tabId,
-          path: 'index.html',
+          path: 'index.html?tabId=' + tabId,
           enabled: true
         });
-        chrome.sidePanel.open({
-          tabId
+        await chrome.sidePanel.open({
+          tabId: tabId
         });
       });
   
@@ -345,8 +337,7 @@ chrome.commands.onCommand.addListener(async (command) => {
   // Check if the active tab is a chrome:// page
   if (activeTab.url.startsWith("chrome://")) {
       console.warn("Active tab is a chrome:// URL, aborting operation.");
-      chrome.tabs.sendMessage(activeTab.id, { command, text: "" });
-      chrome.runtime.sendMessage({ command, text: "" });
+      chrome.runtime.sendMessage({ command, text: "", tabId: activeTab.id });
       return; // Early exit if it's a restricted page
   }
 
@@ -363,19 +354,20 @@ chrome.commands.onCommand.addListener(async (command) => {
       const pageText = await chrome.scripting.executeScript({
           target: { tabId: activeTab.id },
           func: () => {
-        const html = document; // Full HTML content
+        const html = document.documentElement.outerHTML; // Full HTML content
         const textContent = document.body.innerText;   // Inner text of the body
         return { html, textContent }; // Return both HTML and text
       },
       });
       text = pageText[0]?.result?.textContent || "";
       html = pageText[0]?.result?.html || "";
+      console.log(html);
+      console.log(typeof html);
   }
 
   console.log(`Selected text! Length: ${text.length}`);
 
-  chrome.tabs.sendMessage(activeTab.id, { command, text, html });
-  chrome.runtime.sendMessage({ command, text, html });
+  chrome.runtime.sendMessage({ command, text, html, tabId: activeTab.id });
 });
 
 // Listen for new bookmarks
@@ -393,7 +385,7 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
   const pageText = await chrome.scripting.executeScript({
     target: { tabId: activeTab.id },
     func: () => {
-        const html = document; // Full HTML content
+        const html = document.documentElement.outerHTML; // Full HTML content
         const textContent = document.body.innerText;   // Inner text of the body
         return { html, textContent }; // Return both HTML and text
       },
@@ -401,6 +393,8 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
 
   let text = pageText[0]?.result?.textContent || "";
   let html = pageText[0]?.result?.html || "";
+
+  console.log("HTML content for summarization:", html, "Type:", typeof html);
 
   console.log("Retrieved page content for summarization.");
 
@@ -415,9 +409,9 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
     bookmarkId: id,
     bookmarkURL: bookmark.url,
     faviconURL,
+    tabId: activeTab.id,
   };
 
-  chrome.tabs.sendMessage(activeTab.id, message);
   chrome.runtime.sendMessage(message);
 });
 
@@ -426,5 +420,5 @@ chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
   console.log(`Bookmark removed: ${id}`);
 
   // Send a command to delete the bookmark
-  chrome.runtime.sendMessage({ command: "delete-bookmark", bookmarkId: id });
+  chrome.runtime.sendMessage({ command: "delete-bookmark", bookmarkId: id});
 });

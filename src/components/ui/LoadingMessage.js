@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Typography, Box } from "@mui/material";
+import { Typography, Box, useTheme } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 
 const LoadingMessage = ({ isGenerating }) => {
   const [loadingMessage, setLoadingMessage] = useState("Generating response");
+  const theme = useTheme();
 
   useEffect(() => {
     const loadingMessages = [
@@ -32,14 +33,13 @@ const LoadingMessage = ({ isGenerating }) => {
   return (
     <Box
       sx={{
-        backgroundColor: '#FFFFFF',
-        color: '#1A73E8',
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.primary.main,
         borderRadius: 2,
         p: 2,
-        mt: 2,
         width: '100%',
         boxShadow: 3,
-        border: '2px solid #1A73E8',
+        border: `2px solid ${theme.palette.primary.main}`,
       }}
     >
       <AnimatePresence mode="wait">
