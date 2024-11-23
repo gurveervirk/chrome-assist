@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, List, ListItem, ListItemText, Collapse, Avatar, Typography, Divider, IconButton, Tooltip } from '@mui/material';
-import { ExpandLess, ExpandMore, Link as LinkIcon, Delete as DeleteIcon, Save as SaveIcon } from '@mui/icons-material';
-import { fetchBookmarks, deleteBookmark } from '../../utils/db'; // Import fetchBookmarks, deleteBookmark, and saveBookmark from utils/db
+import { ExpandLess, ExpandMore, Link as LinkIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { fetchBookmarks, deleteBookmark } from '../../utils/db';
 import LoadingMessage from './LoadingMessage';
+import { motion } from 'framer-motion';
 
 const Bookmark = ({ isBookmarking }) => {
   const [bookmarks, setBookmarks] = useState([]);
@@ -24,6 +25,7 @@ const Bookmark = ({ isBookmarking }) => {
   }, []);
 
   useEffect(() => {
+    console.log('isBookmarking', isBookmarking);
     if (!isBookmarking) {
       const loadBookmarks = async () => {
         try {
@@ -45,7 +47,6 @@ const Bookmark = ({ isBookmarking }) => {
   const handleDelete = async (id) => {
     try {
       await deleteBookmark(id);
-      // setBookmarks(bookmarks.filter(bookmark => bookmark.id !== id));
       const data = await fetchBookmarks();
       setBookmarks(data);
     } catch (err) {
@@ -70,18 +71,19 @@ const Bookmark = ({ isBookmarking }) => {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       <Typography
-          variant="h6"
-          sx={{
-            background: 'linear-gradient(90deg, #4285F4, #EA4335)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            display: 'flex',
-            alignItems: 'flex-end',
-            lineHeight: 2,
-          }}
-        >
-          Bookmarks
-        </Typography>
+        variant="h6"
+        sx={{
+          background: 'linear-gradient(90deg, #4285F4, #EA4335)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          display: 'flex',
+          alignItems: 'flex-end',
+          lineHeight: 2,
+        }}
+      >
+        Bookmarks
+      </Typography>
+      {isBookmarking && <LoadingMessage isGenerating={isBookmarking} />}
       {error && (
         <Typography variant="body2" sx={{ color: 'red', textAlign: 'center', mb: 2 }}>
           {error}
@@ -92,18 +94,23 @@ const Bookmark = ({ isBookmarking }) => {
           Nothing to see here 😊
         </Typography>
       ) : (
-        <List sx={{marginTop: "0px"}}>
-          {isBookmarking && <LoadingMessage isGenerating={isBookmarking} />}
+        <List sx={{ marginTop: "0px" }}>
           {bookmarks.map((bookmark) => (
-            <div key={bookmark.id}>
+            <motion.div
+              key={bookmark.id}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
               <ListItem button onClick={() => handleClick(bookmark.id)} sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar src={bookmark.favicon} alt="Favicon" sx={{ width: 24, height: 24, marginRight: 1 }} />
-                <ListItemText 
+                <ListItemText
                   primary={
                     <Typography sx={{ fontSize: "0.6rem", display: 'flex', alignItems: 'center' }}>
                       {parseTitle(bookmark.title)}
                     </Typography>
-                  } 
+                  }
                 />
                 <Tooltip title={bookmark.url}>
                   <IconButton
@@ -128,26 +135,25 @@ const Bookmark = ({ isBookmarking }) => {
                   <Typography variant="h6" gutterBottom>
                     {parseTitle(bookmark.title)}
                   </Typography>
-                  {
-                    bookmark.keywords && 
+                  {bookmark.keywords && (
                     <span>
                       <Divider sx={{ my: 1 }} />
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         <strong>Keywords:</strong> {parseKeywords(bookmark.keywords)}
                       </Typography>
                     </span>
-                  }
-                  {bookmark.tldr && 
-                  <span>
-                    <Divider sx={{ my: 1 }} />
-                    <Typography variant="body1" gutterBottom>
-                      <strong>Summary:</strong> {bookmark.tldr}
-                    </Typography>
-                  </span>
-                  }
+                  )}
+                  {bookmark.tldr && (
+                    <span>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="body1" gutterBottom>
+                        <strong>Summary:</strong> {bookmark.tldr}
+                      </Typography>
+                    </span>
+                  )}
                 </Box>
               </Collapse>
-            </div>
+            </motion.div>
           ))}
         </List>
       )}

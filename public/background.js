@@ -1,8 +1,8 @@
 const defaultSettings = {
   prompt: {
       available: { temperature: [0, 1], topK: [1, 8] },
-      temperature: 1,
-      topK: 8,
+      temperature: 0.3,
+      topK: 5,
   },
   summarize: {
       available: {
@@ -192,7 +192,7 @@ const defaultSettings = {
     available: {
       numQueries: [1, 10],
     },
-    prompt: "You are an advanced AI model designed to generate relevant, context-aware web search queries from a user’s input. Analyze the input to identify key topics, intent, and details, then craft numQueries optimized queries that ensure diverse and accurate results. Focus on understanding the user’s needs—such as finding background information, current data, or alternative perspectives—and create queries that balance specificity and breadth. Avoid overly broad or narrow phrasing, ensuring each query is natural, concise, and directly aligned with the user’s intent while exploring varied angles or subtopics for a well-rounded perspective. Return only the search queries as an unordered list.",
+    prompt: "You are an advanced AI model designed to generate enhanced web search queries from user input.\nYour task is to understand the user's input prompt and craft numQueries sleek, concise web search queries to help the user find better results.\n\nKey Guidelines:\n- Focus only on relevant keywords that contribute directly to finding useful results.\n- Omit unnecessary or 'extra' words that add no value to the search process.\n- These queries should be phrases, not full sentences or questions.\n- Ensure the queries are highly specific, well-targeted, and optimized for web search engines.\nReturn the final numQueries web search queries as an unordered list.",
     numQueries: 5,
   }
 };

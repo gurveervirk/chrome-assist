@@ -58,6 +58,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
 
   const handleRewrite = (text, id, type) => {
     console.log('Rewrite:', text, id, type);
+    text = text.replace(/<[^>]*>?/gm, '');
     handleTriggerRewrite(text, id, type);
   };
 
