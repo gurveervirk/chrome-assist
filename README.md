@@ -61,7 +61,7 @@ Simply download the latest build from the **[Releases Section](https://github.co
 3. 🛡️ **Grant Necessary Permissions**:  
    Chrome-Assist requires permissions for **storage**, **scripting**, and **active tabs**.  
 
-You may also build the extension by cloning this repository and start from the 2nd step above.
+You may also build the extension by cloning this repository and start from the 2nd step above.  
 
 ---
 
@@ -77,6 +77,12 @@ You may also build the extension by cloning this repository and start from the 2
 - 🌐 **Translate**: `Alt + Shift + A`  
 - ✏️ **Rewrite**: `Alt + Shift + R`  
 - 🖋️ **Compose**: `Alt + Shift + W`  
+
+---
+
+## 🎥 Demo  
+
+For a quick walkthrough of Chrome-Assist's features, watch our **[YouTube Demo](https://youtu.be/q0Soqrl-XsM)**.  
 
 ---
 
