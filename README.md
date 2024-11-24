@@ -82,7 +82,7 @@ You may also build the extension by cloning this repository and start from the 2
 
 ## 🎥 Demo  
 
-For a quick walkthrough of Chrome-Assist's features, watch our **[YouTube Demo](https://youtu.be/q0Soqrl-XsM)**.  
+For a quick walkthrough of Chrome-Assist's features, watch our **[YouTube Demo](https://youtu.be/KQsZG4lE4uc)**.  
 
 ---
 
