@@ -422,3 +422,4 @@ chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
   // Send a command to delete the bookmark
   chrome.runtime.sendMessage({ command: "delete-bookmark", bookmarkId: id});
 });
+
