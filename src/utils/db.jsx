@@ -1,6 +1,6 @@
 export function openDatabase() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("ChromeAssistDB", 5); // Incremented version to trigger upgrade
+    const request = indexedDB.open("ChromeAssistDB", 6); // Incremented version to trigger upgrade
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
@@ -12,8 +12,7 @@ export function openDatabase() {
         const objectStore = db.createObjectStore("bookmarks", { keyPath: "id" });
 
         // Define indexes based on the structure of bookmarkData
-        objectStore.createIndex("bookmarkID", "bookmarkID", { unique: false });
-        objectStore.createIndex("url", "url", { unique: false });
+        objectStore.createIndex("url", "url", { unique: true });
         objectStore.createIndex("favicon", "favicon", { unique: false });
         objectStore.createIndex("title", "title", { unique: false });
         objectStore.createIndex("keywords", "keywords", { unique: false });
@@ -71,6 +70,7 @@ export async function saveBookmark(bookmarkData) {
       db.close(); // Close the database connection
       resolve();
     };
+
     transaction.onerror = (event) => {
       db.close(); // Close the database connection
       reject(event.target.errorCode);
@@ -80,65 +80,22 @@ export async function saveBookmark(bookmarkData) {
       db.close(); // Close the database connection
       reject(event.target.errorCode);
     };
-  });
-}
 
-export async function deleteBookmarkByActualID(bookmarkID) {
-  const db = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction("bookmarks", "readwrite");
-    const objectStore = transaction.objectStore("bookmarks");
-    const index = objectStore.index("bookmarkID");
-    const getRequest = index.get(bookmarkID);
-
-    getRequest.onsuccess = () => {
-      const record = getRequest.result;
-      if (record) {
-        const deleteRequest = objectStore.delete(record.id);
-
-        deleteRequest.onsuccess = () => {
-          db.close(); // Close the database connection
-          console.log("Bookmark deleted successfully");
-          resolve();
-        };
-
-        deleteRequest.onerror = (event) => {
-          db.close(); // Close the database connection
-          reject(event.target.errorCode);
-        };
-      } else {
-        db.close(); // Close the database connection
-        console.log("Bookmark not found");
-        resolve();
-      }
-    };
-
-    getRequest.onerror = (event) => {
-      db.close(); // Close the database connection
-      reject(event.target.errorCode);
-    };
-
-    transaction.oncomplete = () => {
-      console.log("Transaction complete for deleteBookmarkByActualID");
-    };
-
-    transaction.onerror = (event) => {
-      db.close(); // Close the database connection
-      reject(event.target.errorCode);
+    request.onsuccess = () => {
+      console.log("Bookmark saved successfully");
     };
   });
 }
 
-export async function deleteBookmark(bookmarkID) {
+export async function deleteBookmark(id) {
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction("bookmarks", "readwrite");
     const objectStore = transaction.objectStore("bookmarks");
-    const request = objectStore.delete(bookmarkID);
+    const request = objectStore.delete(id);
 
     transaction.oncomplete = () => {
       db.close(); // Close the database connection
-      console.log("Bookmark deleted successfully");
       resolve();
     };
     transaction.onerror = (event) => {

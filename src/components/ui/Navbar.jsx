@@ -17,16 +17,19 @@ const Navbar = ({ isGenerating, isBookmarking }) => {
   const colorMode = useContext(ColorModeContext);
 
   useEffect(() => {
-    if (isGenerating && location.pathname !== '/output') {
+    if (isGenerating) {
       setHasUnreadOutput(true);
     }
-  }, [isGenerating]);
-
-  useEffect(() => {
-    if (isBookmarking && location.pathname !== '/bookmarks') {
+    if(isBookmarking){
       setHasUnreadBookmark(true);
     }
-  }, [isBookmarking]);
+    if(location.pathname === '/output'){
+      setHasUnreadOutput(false);
+    }
+    if(location.pathname === '/bookmarks'){
+      setHasUnreadBookmark(false);
+    }
+  }, [isGenerating, isBookmarking, location.pathname]);
 
   const handleOutputClick = () => {
     setHasUnreadOutput(false);

@@ -1,9 +1,10 @@
+/* global chrome */
+
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, IconButton, Select, MenuItem, Tooltip, Typography, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
-import { loadSettings, saveSettings } from "../../api/settingsStorage";
 
 const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
   const [question, setQuestion] = useState("");
@@ -13,23 +14,41 @@ const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
   // Load settings on component mount
   useEffect(() => {
     const fetchSettings = async () => {
-      const storedSettings = await loadSettings();
-      const filteredSettings = Object.keys(storedSettings)
-        .filter(key => key !== "detect")
-        .reduce((obj, key) => {
-          obj[key] = storedSettings[key];
-          return obj;
-        }, {});
-      setSettings(filteredSettings);
-      console.log('Settings:', filteredSettings); // Log the settings
-      setLoading(false); // Mark loading as complete
+      try {
+        const response = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ command: "get-settings" }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+        // Handle rejected promise
+        if (response instanceof Error) {
+          throw response;
+        }
+        setSettings(response);
+      } catch (error) {
+        console.error("Error fetching settings", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchSettings();
+    fetchSettings();    
   }, []);
 
   const handleSubmit = async () => {
     if (question.trim()) {
-      await saveSettings(settings);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "generate", question, settings }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
       compose(question);
       setQuestion("");
     }
@@ -37,7 +56,7 @@ const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
 
   const handleEnhanceQuery = () => {
     if (question.trim()) {
-      enhanceQuery({ text: question });
+      enhanceQuery(question);
     }
   };
 

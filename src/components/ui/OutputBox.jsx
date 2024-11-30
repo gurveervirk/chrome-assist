@@ -7,10 +7,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
-import InfoIcon from '@mui/icons-material/Info'; // Import InfoIcon
-import { fetchOutputs, deleteOutput } from '../../utils/db';
+import InfoIcon from '@mui/icons-material/Info';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingMessage from './LoadingMessage';
+import DOMPurify from "dompurify";
 
 const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   const [copied, setCopied] = useState({});
@@ -21,14 +21,27 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   useEffect(() => {
     const loadOutputs = async () => {
       try {
-        const data = await fetchOutputs();
-        setOutputs(data);
+        const response = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ command: 'get-outputs' }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            }
+            else {
+              resolve(response);
+            }
+          });
+        });
+        // Sanitize the HTML content
+        response.forEach(output => {
+          output.text = DOMPurify.sanitize(output.text);
+        });
+        setOutputs(response);
       } catch (err) {
         setError('Failed to load outputs');
         console.error(err);
       }
     };
-
+    
     loadOutputs();
   }, []);
 
@@ -36,8 +49,21 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     if (!isGenerating) {
       const loadOutputs = async () => {
         try {
-          const data = await fetchOutputs();
-          setOutputs(data);
+          const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ command: 'get-outputs' }, (response) => {
+              if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+              }
+              else {
+                resolve(response);
+              }
+            });
+          });
+          // Sanitize the HTML content
+          response.forEach(output => {
+            output.text = DOMPurify.sanitize(output.text);
+          });
+          setOutputs(response);
         } catch (err) {
           setError('Failed to load outputs');
           console.error(err);
@@ -64,7 +90,16 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteOutput(id);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: 'delete-output', id }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          }
+          else {
+            resolve(response);
+          }
+        });
+      });
       setOutputs(outputs.filter(output => output.id !== id));
     } catch (err) {
       setError('Failed to delete output');

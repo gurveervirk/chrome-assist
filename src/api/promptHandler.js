@@ -1,17 +1,17 @@
+/* global chrome */
 // src/api/promptHandler.js
 
 import { marked } from "marked";
-import DOMPurify from "dompurify";
 import { loadSettings } from "./settingsStorage";
 
 let session;
 
 export const createPromptSession = async (systemPrompt, temperature, topK) => {
   if (session) session.destroy();
-  session = await window.ai.languageModel.create({
+  session = await ai.languageModel.create({
     systemPrompt: systemPrompt,
-    temperature: temperature, 
-    topK: topK 
+    temperature: temperature,
+    topK: topK,
   });
 };
 
@@ -21,7 +21,11 @@ export const promptModel = async (systemPrompt, prompt) => {
   const storedSettings = await loadSettings();
   const { temperature, topK } = storedSettings.prompt;
 
-  if (!session || JSON.stringify({ temperature, topK }) !== JSON.stringify(storedSettings.prompt)) {
+  if (
+    !session ||
+    JSON.stringify({ temperature, topK }) !==
+      JSON.stringify(storedSettings.prompt)
+  ) {
     await createPromptSession(systemPrompt, temperature, topK);
   }
 
@@ -32,5 +36,5 @@ export const promptModel = async (systemPrompt, prompt) => {
 
   session.destroy();
 
-  return DOMPurify.sanitize(marked.parse(fullResponse));
+  return marked.parse(fullResponse);
 };

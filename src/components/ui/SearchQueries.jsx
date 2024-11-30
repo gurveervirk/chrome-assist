@@ -3,11 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, IconButton, List, ListItem, ListItemText } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import DOMPurify from "dompurify";
 
 const SearchQueries = ({ searchQueries }) => {
   const [queries, setQueries] = useState([]);
 
   useEffect(() => {
+    // Sanitize the HTML content
+    searchQueries = DOMPurify.sanitize(searchQueries);
     // Parse the HTML string to extract the text content of each list item
     const parser = new DOMParser();
     const doc = parser.parseFromString(searchQueries, 'text/html');

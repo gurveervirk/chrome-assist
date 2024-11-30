@@ -1,6 +1,6 @@
+/* global chrome */
 // src/api/settingsStorage.js
 
-/* global chrome */
 
 const isChromeExtension = typeof chrome !== "undefined" && chrome.storage;
 

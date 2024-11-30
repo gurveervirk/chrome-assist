@@ -1,27 +1,28 @@
-import React, { useState, useEffect, useContext } from "react";
-import { loadSettings, saveSettings } from "../../api/settingsStorage"; // Import loadSettings and saveSettings
-import { MenuItem, IconButton, Select, Slider, TextField, FormControl, InputLabel, Typography, Box } from "@mui/material";
+/* global chrome */
+
+import React, { useState, useEffect } from "react";
+import { MenuItem, IconButton, Select, Slider, TextField, FormControl, Typography, Box } from "@mui/material";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
-import { ColorModeContext } from '../../App';
 
-const Settings = ({ isOpen, onClose }) => {
+const Settings = () => {
   const [currentTab, setCurrentTab] = useState("prompt"); // Default to "prompt"
   const [settings, setSettings] = useState({}); // State for settings
   const [saved, setSaved] = useState(false); // State to manage saved icon
-  const colorMode = useContext(ColorModeContext);
 
   // Load settings on component mount
   useEffect(() => {
     const fetchSettings = async () => {
-      const storedSettings = await loadSettings();
-      const filteredSettings = Object.keys(storedSettings)
-        .filter(key => key !== "detect")
-        .reduce((obj, key) => {
-          obj[key] = storedSettings[key];
-          return obj;
-        }, {});
-      setSettings(filteredSettings);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "get-settings" }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      setSettings(response);
     };
     fetchSettings();
   }, []);
@@ -134,10 +135,17 @@ const Settings = ({ isOpen, onClose }) => {
 
   // Function to handle save action
   const handleSave = async () => {
-    await saveSettings(settings); // Save the settings
+    const response = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ command: "save-settings", settings }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      });
+    });
     setSaved(true); // Set saved state to true
     setTimeout(() => setSaved(false), 2000); // Reset saved state after 2 seconds
-    onClose(); // Close the settings menu after saving
   };
 
   return (

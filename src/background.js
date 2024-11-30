@@ -1,3 +1,13 @@
+/* global chrome */
+import { promptSummarizeModel } from "./api/summarizeHandler";
+import { handleTranslation } from "./api/translateHandler";
+import { handleWrite } from "./api/writeHandler";
+import { handleRewrite, enhanceSearchQueries } from "./api/rewriteHandler";
+import { saveBookmark, deleteBookmark, saveOutput, deleteOutput, fetchOutputs, fetchBookmarks } from "./utils/db";
+import { loadSettings, saveSettings } from "./api/settingsStorage";
+import { v4 as uuidv4 } from "uuid";
+import { set } from "mongoose";
+
 const defaultSettings = {
   prompt: {
       available: { temperature: [0, 1], topK: [1, 8] },
@@ -249,20 +259,78 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
+// Handle the menu item and command
+async function handleMenuAndCommand(command, text) {
+  if (command === "trigger-write") {
+    return;
+  }
+
+  // Notify loading state after 2 seconds
+  setTimeout(() => {
+    chrome.runtime.sendMessage({ command: "loading-output" });
+  }, 100);
+
+  let outputData = null;
+
+  try {
+    if (command === "trigger-summarize") {
+      const result = await promptSummarizeModel(text, false);
+      outputData = {
+        id: uuidv4(),
+        input: text,
+        text: result,
+        timestamp: new Date().toISOString(),
+        type: 'Summary',
+      };
+    } 
+    else if (command === "trigger-translate") {
+      const result = await handleTranslation(text, "en");
+      outputData = {
+        id: uuidv4(),
+        input: text,
+        text: result,
+        timestamp: new Date().toISOString(),
+        type: 'Translation',
+      };
+    } 
+    else if (command === "trigger-rewrite") {
+      const result = await handleRewrite(text);
+      outputData = {
+        id: uuidv4(),
+        input: text,
+        text: result,
+        timestamp: new Date().toISOString(),
+        type: 'Composition',
+      };
+    }
+
+    if (outputData) {
+      // Save the output if we have generated data
+      await saveOutput(outputData);
+    }
+  } catch (error) {
+    console.error("Error handling command:", error);
+  } finally {
+    // Ensure "output-ready" is always sent after all operations
+    console.log("Sending output-ready message");
+    setTimeout(() => {
+      chrome.runtime.sendMessage({ command: "output-ready" });
+    }, 100);
+  }
+}
+
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   console.log(`Context menu item clicked: ${info.menuItemId}`);
 
   try {
-      chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
-        const tabId = tab.id;
+      chrome.tabs.query({ active: true, currentWindow: true }, async function () {
         chrome.sidePanel.setOptions({
-          tabId,
-          path: 'index.html?tabId=' + tabId,
+          path: 'index.html',
           enabled: true
         });
         await chrome.sidePanel.open({
-          tabId: tabId
+          tabId: tab.id
         });
       });
   
@@ -304,9 +372,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     console.log(typeof html);
   }
 
-  setTimeout(() => {
-    chrome.runtime.sendMessage({ command, text, html, tabId: tab.id });
-  }, 2000);
+  await handleMenuAndCommand(command, text);
   
   console.log(`Command ${command} executed!`);
 });
@@ -317,15 +383,13 @@ chrome.commands.onCommand.addListener(async (command) => {
   let [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   try {
-      chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
-        const tabId = activeTab.id;
+      chrome.tabs.query({ active: true, currentWindow: true }, async function () {
         chrome.sidePanel.setOptions({
-          tabId,
-          path: 'index.html?tabId=' + tabId,
+          path: 'index.html',
           enabled: true
         });
         await chrome.sidePanel.open({
-          tabId: tabId
+          tabId: activeTab.id
         });
       });
   
@@ -367,59 +431,120 @@ chrome.commands.onCommand.addListener(async (command) => {
 
   console.log(`Selected text! Length: ${text.length}`);
 
-  chrome.runtime.sendMessage({ command, text, html, tabId: activeTab.id });
+  await handleMenuAndCommand(command, text);
+
+  console.log(`Command ${command} executed`);
 });
 
-// Listen for new bookmarks
-chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
-  console.log(`New bookmark created: ${bookmark.title} (${bookmark.url})`);
-
-  // Retrieve the content of the bookmarked page
-  let [activeTab] = await chrome.tabs.query({ url: bookmark.url });
-
-  if (!activeTab) {
-    console.warn("No active tab found for the bookmarked URL.");
-    return;
-  }
-
-  const pageText = await chrome.scripting.executeScript({
-    target: { tabId: activeTab.id },
-    func: () => {
-        const html = document.documentElement.outerHTML; // Full HTML content
-        const textContent = document.body.innerText;   // Inner text of the body
-        return { html, textContent }; // Return both HTML and text
-      },
-  });
-
-  let text = pageText[0]?.result?.textContent || "";
-  let html = pageText[0]?.result?.html || "";
-
-  console.log("HTML content for summarization:", html, "Type:", typeof html);
-
-  console.log("Retrieved page content for summarization.");
-
-  // Retrieve the favicon URL
-  const faviconURL = activeTab.favIconUrl || "";
-
-  // Send the content for summarization
-  const message = {
-    command: "summarize-bookmark",
-    text,
-    html,
-    bookmarkId: id,
-    bookmarkURL: bookmark.url,
-    faviconURL,
-    tabId: activeTab.id,
-  };
-
-  chrome.runtime.sendMessage(message);
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Handling only write, rewrite, delete, search and other get functions
+  (async () => {
+    try{
+      if (message.command === "write") {
+        const result = await handleWrite(message.text, message.tone, message.length);
+        const outputData = {
+          id: uuidv4(),
+          input: message.text,
+          text: result,
+          timestamp: new Date().toISOString(),
+          type: 'Composition'
+        };
+        await saveOutput(outputData);
+        sendResponse(outputData);
+      } else if (message.command === "rewrite") {
+        const result = await handleRewrite(message.text);
+        const outputData = {
+          id: message.id || uuidv4(),
+          input: message.text,
+          text: result,
+          timestamp: new Date().toISOString(),
+          type: message.type || 'Composition'
+        };
+        await saveOutput(outputData);
+        sendResponse(outputData);
+      } else if (message.command === "delete-output") {
+        await deleteOutput(message.id);
+        sendResponse({ success: true });
+      } else if (message.command === "delete-bookmark") {
+        await deleteBookmark(message.id);
+        sendResponse({ success: true });
+      } else if (message.command === "enhance-query") {
+        const searchQuery = message.text;
+        const enhancedQueries = await enhanceSearchQueries(searchQuery);
+        const outputData = {
+          id: uuidv4(),
+          input: searchQuery,
+          text: enhancedQueries,
+          timestamp: new Date().toISOString(),
+          type: 'Search'
+        };
+        await saveOutput(outputData);
+        sendResponse(outputData);
+      } else if (message.command === "get-settings") {
+        const storedSettings = await loadSettings();
+        const filteredSettings = Object.keys(storedSettings)
+          .filter(key => key !== "detect")
+          .reduce((obj, key) => {
+            obj[key] = storedSettings[key];
+            return obj;
+          }, {});
+        sendResponse(filteredSettings);
+      } else if (message.command === "save-settings") {
+        await saveSettings(message.settings);
+        sendResponse({ success: true });
+      } else if (message.command === "get-outputs") {
+        const outputs = await fetchOutputs();
+        sendResponse(outputs);
+      } else if (message.command === "get-bookmarks") {
+        const bookmarks = await fetchBookmarks();
+        sendResponse(bookmarks);
+      } else if (message.command === "bookmark") {
+        // Retrieve the content of the bookmarked page
+        try{
+          let [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          let bookmarks = await fetchBookmarks();
+          let bookmarkedURLs = bookmarks.map(bookmark => bookmark.url);
+          if (bookmarkedURLs.includes(activeTab.url)) {
+            sendResponse({ response: "Bookmark already exists" });
+            return;
+          }
+  
+          if (!activeTab) {
+            console.warn("No active tab found for the bookmarked URL.");
+            return;
+          }
+  
+          const pageText = await chrome.scripting.executeScript({
+            target: { tabId: activeTab.id },
+            func: () => {
+              const html = document.documentElement.outerHTML; // Full HTML content
+              const textContent = document.body.innerText;   // Inner text of the body
+              return { html, textContent }; // Return both HTML and text
+            },
+          });
+  
+          let text = pageText[0]?.result?.textContent || "";
+          let html = pageText[0]?.result?.html || "";
+          const result = await promptSummarizeModel(text, true);
+          const bookmarkData = {
+            id: uuidv4(),
+            url: activeTab.url,
+            favicon: activeTab.favIconUrl,
+            ...result,
+          };
+          const response = await saveBookmark(bookmarkData);
+          sendResponse(response);
+        }
+        catch(err){
+          console.error("Error in bookmarking:", err);
+          sendResponse({ error: err });
+        }
+      }
+    }
+    catch(err){
+      console.error("Error in message handling:", err);
+      sendResponse({ error: err });
+    }
+  })();
+  return true;
 });
-
-// Listen for deleted bookmarks
-chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
-  console.log(`Bookmark removed: ${id}`);
-
-  // Send a command to delete the bookmark
-  chrome.runtime.sendMessage({ command: "delete-bookmark", bookmarkId: id});
-});
-

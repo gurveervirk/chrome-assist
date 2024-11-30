@@ -1,7 +1,7 @@
+/* global chrome */
 // src/api/rewriteHandler.js
 
 import { marked } from "marked";
-import DOMPurify from "dompurify";
 import { loadSettings } from "./settingsStorage"; // Importing the settings functions
 import { promptModel } from "./promptHandler"; // Importing the prompt handler
 
@@ -18,7 +18,7 @@ const createReWriter = async () => {
   }
 
   // Create a new rewriter instance with the updated settings
-  reWriter = await window.ai.rewriter.create({
+  reWriter = await ai.rewriter.create({
     tone: currentSettings.rewrite.tone,
     length: currentSettings.rewrite.length,
     format: currentSettings.rewrite.format,
@@ -31,11 +31,11 @@ const promptRewriteModel = async (prompt) => {
   console.log("Prompt: ", prompt);
   if (!prompt) throw new Error("Prompt is required");
 
-  if (!window.ai || !window.ai.rewriter) {
+  if (!ai || !ai.rewriter) {
     throw new Error("Rewrite API unavailable");
   }
 
-  // const canRewrite = await window.ai.assistant.capabilities();
+  // const canRewrite = await ai.assistant.capabilities();
   // if (canRewrite.available === 'no') {
   //   throw new Error("AI writer is not supported");
   // }
@@ -48,7 +48,7 @@ const promptRewriteModel = async (prompt) => {
     const fullResponse = await reWriter.rewrite(prompt);
 
     return {
-      sanitizedResponse: DOMPurify.sanitize(marked.parse(fullResponse)),
+      sanitizedResponse: marked.parse(fullResponse),
     };
   } catch (error) {
     throw new Error(`Error: ${error.message}`);
@@ -71,10 +71,13 @@ export const enhanceSearchQueries = async (query) => {
   try {
     const settings = await loadSettings();
     const { numQueries, prompt } = settings.search;
-    const result = await promptModel(prompt.replace('numQueries', numQueries), query);
+    const result = await promptModel(
+      prompt.replace("numQueries", numQueries),
+      query
+    );
     return result;
   } catch (error) {
     console.error("Error:", error.message);
     throw error;
   }
-}
+};

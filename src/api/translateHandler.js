@@ -1,26 +1,28 @@
+/* global chrome */
 // src/api/translateHandler.js
 
 import { loadSettings } from "./settingsStorage"; // Import from settingsStorage.js
 import { detectLanguage } from "./detectHandler";
-import DOMPurify from "dompurify";
 
 let translator;
 
 // Function to create a translator instance with language pair
 const createTranslator = async (languagePair) => {
-  if (!window.translation) {
+  if (!translation) {
     throw new Error("Translation API is not available in this browser.");
   }
 
-  const canTranslate = await window.translation.canTranslate(languagePair);
+  const canTranslate = await translation.canTranslate(languagePair);
   if (canTranslate === "no") {
-    throw new Error("Translation for the specified language pair is not supported.");
+    throw new Error(
+      "Translation for the specified language pair is not supported."
+    );
   }
 
   if (canTranslate === "readily") {
-    translator = await window.translation.createTranslator(languagePair);
+    translator = await translation.createTranslator(languagePair);
   } else {
-    translator = await window.translation.createTranslator(languagePair);
+    translator = await translation.createTranslator(languagePair);
     translator.addEventListener("downloadprogress", (e) => {
       console.log(`Download progress: ${e.loaded} / ${e.total}`);
     });
@@ -40,12 +42,15 @@ const promptModel = async (prompt, targetLanguage) => {
   const sourceLanguage = (await detectLanguage(prompt)).detectedLanguage;
   if (sourceLanguage === targetLanguage) {
     return {
-      sanitizedResponse: DOMPurify.sanitize(prompt),
+      sanitizedResponse: prompt,
     };
   }
 
   // Check if both source and target languages exist in languageMapping
-  if (!languageMapping.hasOwnProperty(sourceLanguage) || !languageMapping.hasOwnProperty(targetLanguage)) {
+  if (
+    !languageMapping.hasOwnProperty(sourceLanguage) ||
+    !languageMapping.hasOwnProperty(targetLanguage)
+  ) {
     throw new Error("One or both languages are not supported.");
   }
 
@@ -79,12 +84,15 @@ const promptModel = async (prompt, targetLanguage) => {
       };
       await createTranslator(languagePair);
 
-      translationResult = await translator.translate(intermediateTranslation, targetLanguage);
+      translationResult = await translator.translate(
+        intermediateTranslation,
+        targetLanguage
+      );
     }
 
     return {
       detectedSourceLanguage: sourceLanguage,
-      sanitizedResponse: DOMPurify.sanitize(translationResult),
+      sanitizedResponse: translationResult,
     };
   } catch (error) {
     throw new Error(`Translation error: ${error.message}`);

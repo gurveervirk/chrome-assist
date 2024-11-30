@@ -1,11 +1,13 @@
+/* global chrome */
+
 import React, { useState, useEffect } from 'react';
 import { Box, List, ListItem, ListItemText, Collapse, Avatar, Typography, Divider, IconButton, Tooltip } from '@mui/material';
-import { ExpandLess, ExpandMore, Link as LinkIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { fetchBookmarks, deleteBookmark } from '../../utils/db';
+import { ExpandLess, ExpandMore, Link as LinkIcon, Delete as DeleteIcon, Bookmark as BookmarkIcon } from '@mui/icons-material';
 import LoadingMessage from './LoadingMessage';
 import { motion } from 'framer-motion';
+import DOMPurify from "dompurify";
 
-const Bookmark = ({ isBookmarking }) => {
+const Bookmark = ({ isBookmarking, setIsBookmarking }) => {
   const [bookmarks, setBookmarks] = useState([]);
   const [openSection, setOpenSection] = useState(null);
   const [error, setError] = useState(null);
@@ -13,24 +15,50 @@ const Bookmark = ({ isBookmarking }) => {
   useEffect(() => {
     const loadBookmarks = async () => {
       try {
-        const data = await fetchBookmarks();
-        setBookmarks(data);
+        const response = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ command: "get-bookmarks" }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+        // Sanitize the HTML content
+        response.forEach(bookmark => {
+          bookmark.title = DOMPurify.sanitize(bookmark.title);
+          bookmark.keywords = DOMPurify.sanitize(bookmark.keywords);
+          bookmark.tldr = DOMPurify.sanitize(bookmark.tldr);
+        });
+        setBookmarks(response);
       } catch (err) {
         setError('Failed to load bookmarks');
         console.error(err);
       }
     };
-
     loadBookmarks();
   }, []);
 
   useEffect(() => {
-    console.log('isBookmarking', isBookmarking);
     if (!isBookmarking) {
       const loadBookmarks = async () => {
         try {
-          const data = await fetchBookmarks();
-          setBookmarks(data);
+          const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ command: "get-bookmarks" }, (response) => {
+              if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+              } else {
+                resolve(response);
+              }
+            });
+          });
+          // Sanitize the HTML content
+          response.forEach(bookmark => {
+            bookmark.title = DOMPurify.sanitize(bookmark.title);
+            bookmark.keywords = DOMPurify.sanitize(bookmark.keywords);
+            bookmark.tldr = DOMPurify.sanitize(bookmark.tldr);
+          });
+          setBookmarks(response);
         } catch (err) {
           setError('Failed to load bookmarks');
           console.error(err);
@@ -46,13 +74,56 @@ const Bookmark = ({ isBookmarking }) => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteBookmark(id);
-      const data = await fetchBookmarks();
-      setBookmarks(data);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "delete-bookmark", id }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      setBookmarks(bookmarks.filter(bookmark => bookmark.id !== id));
     } catch (err) {
       setError('Failed to delete bookmark');
       console.error(err);
     }
+  };
+
+  const handleBookmark = async () => {
+    setIsBookmarking(true);
+    try {
+      const result = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "bookmark" }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      if (result.response && result.response === 'Bookmark already exists') {
+        setError('Bookmark already exists');
+        setTimeout(() => setError(null), 3000);
+        setIsBookmarking(false);
+        return;
+      }
+      // Reload bookmarks after adding a new one
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "get-bookmarks" }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      setBookmarks(response);
+    } catch (err) {
+      setError('Failed to bookmark the page');
+      console.error(err);
+    }
+    setIsBookmarking(false);
   };
 
   const parseKeywords = (html) => {
@@ -70,19 +141,32 @@ const Bookmark = ({ isBookmarking }) => {
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
-      <Typography
-        variant="h6"
-        sx={{
-          background: 'linear-gradient(90deg, #4285F4, #EA4335)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          display: 'flex',
-          alignItems: 'flex-end',
-          lineHeight: 2,
-        }}
-      >
-        Bookmarks
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography
+          variant="h6"
+          sx={{
+            background: 'linear-gradient(90deg, #4285F4, #EA4335)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            display: 'flex',
+            alignItems: 'flex-end',
+            lineHeight: 2,
+          }}
+        >
+          Bookmarks
+        </Typography>
+        <Tooltip title="Bookmark Current Page">
+          <IconButton 
+            onClick={handleBookmark}
+            sx={{
+              '&:hover': { color: '#1A73E8' },
+            }}
+            disabled={isBookmarking}
+          >
+            <BookmarkIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
       {isBookmarking && <LoadingMessage isGenerating={isBookmarking} />}
       {error && (
         <Typography variant="body2" sx={{ color: 'red', textAlign: 'center', mb: 2 }}>
@@ -94,7 +178,7 @@ const Bookmark = ({ isBookmarking }) => {
           Nothing to see here 😊
         </Typography>
       ) : (
-        <List sx={{ marginTop: "0px" }}>
+        <List sx={{ marginTop: "0px", padding: "0px" }}>
           {bookmarks.map((bookmark) => (
             <motion.div
               key={bookmark.id}

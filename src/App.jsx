@@ -1,12 +1,7 @@
 /* global chrome */
 
-import { useState, useEffect, createContext, useMemo } from "react";
+import React, { useState, useEffect, createContext, useMemo } from "react";
 import { MemoryRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
-import { promptSummarizeModel } from "./api/summarizeHandler";
-import { handleTranslation } from "./api/translateHandler";
-import { handleWrite } from "./api/writeHandler";
-import { handleRewrite, enhanceSearchQueries } from "./api/rewriteHandler";
-import { saveBookmark, deleteBookmarkByActualID, saveOutput } from "./utils/db"; // Import IndexedDB functions
 import Settings from "./components/ui/Settings";
 import OutputBox from "./components/ui/OutputBox";
 import QuestionBox from "./components/ui/QuestionBox";
@@ -15,220 +10,28 @@ import Navbar from './components/ui/Navbar';
 import Home from './components/ui/Home';
 import { Divider, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
-import { v4 as uuidv4 } from 'uuid';
-import Readability from "@mozilla/readability";
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmarking, setError }) => {
   const navigate = useNavigate();
-  const [tabId, setTabId] = useState(null);
 
   useEffect(() => {
-    // Query for the active tab and set tabId
-    const fetchTabId = async () => {
-      try {
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tabs.length > 0) {
-          const currentTab = tabs[0];
-          console.log("currentTab: ", currentTab);
-          setTabId(currentTab.id);
-        } else {
-          console.error("No active tab found.");
-        }
-      } catch (error) {
-        console.error("Error querying tabs:", error);
-      }
-    };
-  
-    fetchTabId();
-  }, []);
-
-  useEffect(() => {
-    if (tabId === null) {
-      console.log("tabId not yet set. Waiting...");
-      return;
-    }
-    const extractMainContent = (doc) => {
-      try{
-        const parser = new DOMParser();
-        const htmlDoc = parser.parseFromString(doc, 'text/html');
-        const reader = new Readability(htmlDoc);
-        const article = reader.parse();
-      
-        return article?.textContent || null;
-      }
-      catch (error) {
-        console.error("Error extracting main content using Readability:", error);
-        return null;
-      }
-    };
-
-    const handleTriggerSummarize = async (message) => {
-      console.log("handleTriggerSummarize message received");
-      setIsGenerating(true);
-      navigate('/output');
-      try {
-        // Attempt to extract main content using Readability
-        let mainContent = message.html ? extractMainContent(message.html) : null;
-        const textToSummarize = mainContent || message.text; // Fallback to plain text
-
-        const result = await promptSummarizeModel(textToSummarize, false);
-        const outputData = {
-          id: uuidv4(),
-          input: textToSummarize,
-          text: result,
-          timestamp: new Date().toISOString(),
-          type: 'Summary',
-        };
-        await saveOutput(outputData);
-      } catch (error) {
-        console.error("Error during summarization:", error);
-        setError("Failed to summarize the text.");
-      } finally {
-        setIsGenerating(false);
-      }
-    };
-
-    const handleSummarizeBookmark = async (message) => {
-      console.log("handleSummarizeBookmark message received");
-      setIsBookmarking(true);
-      navigate('/bookmarks');
-      try {
-        let mainContent = (message.html && extractMainContent(message.html)) || null;
-        const textToSummarize = mainContent || message.text; // Fallback to plain text
-
-        const result = await promptSummarizeModel(textToSummarize, true); // Summarize as a bookmark
-        const bookmarkData = {
-          id: uuidv4(),
-          bookmarkID: message.bookmarkId,
-          url: message.bookmarkURL,
-          favicon: message.faviconURL,
-          ...result,
-        };
-        await saveBookmark(bookmarkData);
-        console.log("Bookmark summary saved:", bookmarkData);
-      } catch (error) {
-        console.error("Error saving bookmark summary:", error);
-        setError("Failed to save bookmark summary.");
-      }
-      setIsBookmarking(false);
-    };
-
-    const handleDeleteBookmark = async (message) => {
-      console.log("handleDeleteBookmark message received");
-      try {
-        setIsBookmarking(true);
-        await deleteBookmarkByActualID(String(message.bookmarkId));
-        setIsBookmarking(false);
-        console.log("Bookmark deleted with ID:", message.bookmarkId);
-      } catch (error) {
-        console.error("Error deleting bookmark:", error);
-        setError("Failed to delete bookmark.");
-      }
-    };
-
-    const handleTriggerWrite = async (message) => {
-      console.log("handleTriggerWrite message received");
-      navigate('/output');
-      try {
-        let mainContent = (message.html && extractMainContent(message.html)) || null;
-        const textToWrite = mainContent || message.text;
-
-        const result = await handleWrite(textToWrite);
-        const outputData = {
-          id: uuidv4(),
-          input: textToWrite,
-          text: result,
-          timestamp: new Date().toISOString(),
-          type: 'Composition',
-        };
-        await saveOutput(outputData);
-      } catch (error) {
-        console.error("Error during writing:", error);
-        setError("Failed to write the text.");
-      }
-    };
-
-    const handleTriggerRewrite = async (message) => {
-      console.log("handleTriggerRewrite message received");
-      setIsGenerating(true);
-      navigate('/output');
-      try {
-        let mainContent = (message.html && extractMainContent(message.html)) || null;
-        const textToRewrite = mainContent || message.text;
-
-        const result = await handleRewrite(textToRewrite);
-        const outputData = {
-          id: uuidv4(),
-          input: textToRewrite,
-          text: result,
-          timestamp: new Date().toISOString(),
-          type: 'Composition',
-        };
-        await saveOutput(outputData);
-      } catch (error) {
-        console.error("Error during rewriting:", error);
-        setError("Failed to rewrite the text.");
-      } finally {
-        setIsGenerating(false);
-      }
-    };
-
-    const handleTriggerTranslate = async (message) => {
-      console.log("handleTriggerTranslate message received");
-      setIsGenerating(true);
-      navigate('/output');
-      try {
-        let mainContent = (message.html && extractMainContent(message.html)) || null;
-        const textToTranslate = mainContent || message.text;
-
-        const result = await handleTranslation(textToTranslate, "en");
-        const outputData = {
-          id: uuidv4(),
-          input: textToTranslate,
-          text: result,
-          timestamp: new Date().toISOString(),
-          type: 'Translation',
-        };
-        await saveOutput(outputData);
-      } catch (error) {
-        console.error("Error during translation:", error);
-        setError("Failed to translate the text.");
-      } finally {
-        setIsGenerating(false);
-      }
-    };
-
     // Add message listeners
     const messageListener = (message) => {
-      if(message.command === "delete-bookmark" || message.tabId === tabId) {
-        console.log("Received message from background:", message);
-        switch (message.command) {
-          case "trigger-summarize":
-            handleTriggerSummarize(message);
-            break;
-          case "summarize-bookmark":
-            handleSummarizeBookmark(message);
-            break;
-          case "delete-bookmark":
-            handleDeleteBookmark(message);
-            break;
-          case "trigger-translate":
-            handleTriggerTranslate(message);
-            break;
-          case "trigger-write":
-            handleTriggerWrite(message);
-            break;
-          case "trigger-rewrite":
-            handleTriggerRewrite(message);
-            break;
-          default:
-            console.error("Unknown command:", message.command);
-        }
+      if (message.command === "loading-output") {
+        setIsGenerating(true);
+        navigate('/output');
       }
-      else {
-        console.log(`Message not for the current tab. Ignoring as tabId ${tabId} does not match message tabId ${message.tabId}`);
+      else if (message.command === "output-ready"){
+        setIsGenerating(false);
+      }
+      else if (message.command === "loading-bookmark"){
+        setIsBookmarking(true);
+        navigate('/bookmarks');
+      }
+      else if(message.command === "bookmark-ready"){
+        setIsBookmarking(false);
       }
     };
 
@@ -238,21 +41,22 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     return () => {
       chrome.runtime.onMessage.removeListener(messageListener);
     };
-  }, [navigate, setIsGenerating, setIsBookmarking, setError, tabId]);
+  }, []);
 
   const handleQuestionSubmit = async (question, tone = null, length = null) => {
     setIsGenerating(true);
     navigate('/output');
     try {
-      const result = await handleWrite(question, tone, length);
-      const outputData = {
-        id: uuidv4(),
-        input: question,
-        text: result,
-        timestamp: new Date().toISOString(),
-        type: 'Composition'
-      };
-      await saveOutput(outputData);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "generate", question, tone, length }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      console.log("Question response:", response);
     } catch (error) {
       console.error("Error during question submission:", error);
       setError("Failed to submit the question.");
@@ -266,16 +70,15 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     setIsGenerating(true);
     navigate('/output');
     try {
-      const searchQuery = message.text;
-      const enhancedQueries = await enhanceSearchQueries(searchQuery);
-      const outputData = {
-        id: uuidv4(),
-        input: searchQuery,
-        text: enhancedQueries,
-        timestamp: new Date().toISOString(),
-        type: 'Search'
-      };
-      await saveOutput(outputData);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "enhance-query", text: message }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
     } catch (error) {
       console.error("Error during query enhancement:", error);
       setError("Failed to enhance the query.");
@@ -285,22 +88,19 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
   };
 
   const handleTriggerRewrite = async (message, messageID = null, messageType = null) => {
-    console.log("handleTriggerRewrite message received");
-    console.log("messageID: ", messageID);
-    console.log("messageType: ", messageType);
-    console.log("message: ", message);
     setIsGenerating(true);
     navigate('/output');
     try {
-      const result = await handleRewrite(message);
-      const outputData = {
-        id: messageID || uuidv4(),
-        input: message,
-        text: result,
-        timestamp: new Date().toISOString(),
-        type: messageType || 'Composition'
-      };
-      await saveOutput(outputData);
+      const response = new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: "rewrite", text: message, id: messageID, type: messageType }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      console.log("Rewrite response:", response);
     } catch (error) {
       console.error("Error during rewriting:", error);
       setError("Failed to rewrite the text.");
@@ -339,7 +139,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
                 transition={{ duration: 0.3 }}
                 style={{ width: '100%', marginTop: '0.25rem' }}
               >
-                <Bookmark isBookmarking={isBookmarking}/>
+                <Bookmark isBookmarking={isBookmarking} setIsBookmarking={setIsBookmarking}/>
               </motion.div>
             }
           />
@@ -415,7 +215,7 @@ export default function App() {
     <ColorModeContext.Provider value={{ ...colorMode, mode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AppContent
             isGenerating={isGenerating}
             setIsGenerating={setIsGenerating}
