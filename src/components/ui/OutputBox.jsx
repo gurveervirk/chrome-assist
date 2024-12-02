@@ -1,22 +1,37 @@
 /* global chrome */
 
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, List, ListItem, ListItemText, MenuItem, Select, FormControl, InputLabel, Checkbox, ListItemIcon } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Typography, IconButton, Tooltip, List, ListItem, ListItemText, MenuItem, Select, FormControl, InputLabel, Checkbox, Paper, InputBase, Divider } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoIcon from '@mui/icons-material/Info';
+import ClearIcon from '@mui/icons-material/Clear';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingMessage from './LoadingMessage';
 import DOMPurify from "dompurify";
+import FlexSearch from "flexsearch";
+import { set } from 'mongoose';
 
 const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   const [copied, setCopied] = useState({});
   const [selectedTabs, setSelectedTabs] = useState([]);
   const [outputs, setOutputs] = useState([]);
   const [error, setError] = useState(null);
+  const [searchBoxVisible, setSearchBoxVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredOutputs, setFilteredOutputs] = useState([]);
+
+  const flexIndex = useRef(new FlexSearch.Document({
+    tokenize: "full",
+    document: {
+      id: "id",
+      store: ["text"],
+      index: ["text"],
+    },
+  }));
 
   useEffect(() => {
     const loadOutputs = async () => {
@@ -36,6 +51,15 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
           output.text = DOMPurify.sanitize(output.text);
         });
         setOutputs(response);
+        setFilteredOutputs(response);
+
+        // Add outputs to the FlexSearch index
+        response.forEach((output) => {
+          flexIndex.current.add({
+            id: output.id,
+            text: output.text.replace(/<[^>]*>?/gm, ''),
+          });
+        });
       } catch (err) {
         setError('Failed to load outputs');
         console.error(err);
@@ -44,6 +68,19 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     
     loadOutputs();
   }, []);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredOutputs(outputs);
+    } else {
+      const results = flexIndex.current.search(searchQuery);
+      let matchingOutputs = results.flatMap(result => 
+        result.result.map(id => outputs.find(output => output.id === id))
+      );
+      matchingOutputs = [...new Set(matchingOutputs)]; // Remove duplicates
+      setFilteredOutputs(matchingOutputs);
+    }
+  }, [searchQuery, outputs]);
 
   useEffect(() => {
     if (!isGenerating) {
@@ -64,6 +101,15 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
             output.text = DOMPurify.sanitize(output.text);
           });
           setOutputs(response);
+          setFilteredOutputs(response);
+
+          // Add outputs to the FlexSearch index
+          response.forEach((output) => {
+            flexIndex.current.add({
+              id: output.id,
+              text: output.text,
+            });
+          });
         } catch (err) {
           setError('Failed to load outputs');
           console.error(err);
@@ -101,6 +147,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
         });
       });
       setOutputs(outputs.filter(output => output.id !== id));
+      setFilteredOutputs(filteredOutputs.filter(output => output.id !== id));
     } catch (err) {
       setError('Failed to delete output');
       console.error(err);
@@ -112,9 +159,33 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     setSelectedTabs(typeof value === 'string' ? value.split(',') : value);
   };
 
-  const handleSearch = (query) => {
-    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-    chrome.tabs.create({ url });
+  const handleSearch = async (query) => {
+    try {
+      const outputIDs = outputs.map(output => output.id);
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ command: 'search', query: query, ids: outputIDs}, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          }
+          else {
+            resolve(response);
+          }
+        });
+      });
+      // Order the outputs by response order
+      const orderedOutputs = response.map(id => outputs.find(output => output.id === id));
+      setOutputs(orderedOutputs);
+      setFilteredOutputs(orderedOutputs);
+    } catch (err) {
+      setError('Failed to search outputs');
+      setTimeout(() => setError(null), 3000);
+      console.error(err);
+    }
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    handleSearch(searchQuery);
   };
 
   const renderOutput = (output) => {
@@ -161,22 +232,6 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
                     <SearchIcon />
                   </IconButton>
                 </Tooltip>
-                {/* <Tooltip title="Copy to clipboard">
-                  <IconButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopy(output.text, output.id);
-                    }}
-                    sx={{
-                      color: copied[output.id] ? 'green' : '#1A73E8',
-                      padding: 0.5,
-                      transition: 'color 0.3s',
-                    }}
-                    aria-label="copy"
-                  >
-                    {copied[output.id] ? <CheckIcon fontSize='small'/> : <ContentCopyIcon fontSize='small'/>}
-                  </IconButton>
-                </Tooltip> */}
               </Box>
             </ListItem>
           ))}
@@ -207,7 +262,6 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
             width: '100%',
             boxShadow: 3,
             border: '2px solid #1A73E8',
-            // textAlign: 'center',
           }}
         >
           <Box
@@ -304,9 +358,9 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   };
 
   const renderTabContent = () => {
-    const filteredOutputs = selectedTabs.length > 0 ? outputs.filter(output => selectedTabs.includes(output.type)) : outputs;
+    const tabOutputs = selectedTabs.length > 0 ? filteredOutputs.filter(output => selectedTabs.includes(output.type)) : filteredOutputs;
 
-    if (filteredOutputs.length === 0) {
+    if (tabOutputs.length === 0) {
       return (
         <Typography variant="body2" sx={{ textAlign: 'center', mt: 2 }}>
           Nothing to see here 😊
@@ -322,7 +376,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', padding: 2 }}>
+    <Box sx={{ width: '100%', height: '100%', padding: 2, paddingTop: 0 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography
           variant="h6"
@@ -337,62 +391,120 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
         >
           Output
         </Typography>
-        <FormControl variant="outlined" sx={{ minWidth: 120 }}>
-          <InputLabel id="output-type-select-label">Output Type</InputLabel>
-          <Select
-            labelId="output-type-select-label"
-            multiple
-            value={selectedTabs}
-            onChange={handleTabChange}
-            renderValue={(selected) =>
-              selected.length === 0 ? (
-                <Box
-                  sx={{
-                    color: 'rgba(0, 0, 0, 0.6)', // Placeholder-like style
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  All
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {selected.join(', ')}
-                </Box>
-              )
-            }
-            label="Output Type"
-            sx={{
-              fontSize: '0.875rem',
-              width: '150px',
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip
+            title={searchBoxVisible ? 'Hide Search Box' : 'Show Search Box'}
+          >
+            <IconButton onClick={() => setSearchBoxVisible(!searchBoxVisible)}>
+              {searchBoxVisible ? <ClearIcon /> : <SearchIcon />}
+            </IconButton>
+          </Tooltip>
+          <FormControl variant="outlined" sx={{ minWidth: 120 }}>
+            <InputLabel id="output-type-select-label">Output Type</InputLabel>
+            <Select
+              labelId="output-type-select-label"
+              multiple
+              value={selectedTabs}
+              onChange={handleTabChange}
+              renderValue={(selected) =>
+                selected.length === 0 ? (
+                  <Box
+                    sx={{
+                      color: 'rgba(0, 0, 0, 0.6)', // Placeholder-like style
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    All
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {selected.join(', ')}
+                  </Box>
+                )
+              }
+              label="Output Type"
+              sx={{
+                fontSize: '0.875rem',
+                width: '150px',
+              }}
+            >
+              <MenuItem value="Summary" sx={{ fontSize: '0.875rem' }}>
+                <Checkbox checked={selectedTabs.indexOf('Summary') > -1} />
+                <ListItemText primary="Summary" />
+              </MenuItem>
+              <MenuItem value="Translation" sx={{ fontSize: '0.875rem' }}>
+                <Checkbox checked={selectedTabs.indexOf('Translation') > -1} />
+                <ListItemText primary="Translation" />
+              </MenuItem>
+              <MenuItem value="Composition" sx={{ fontSize: '0.875rem' }}>
+                <Checkbox checked={selectedTabs.indexOf('Composition') > -1} />
+                <ListItemText primary="Composition" />
+              </MenuItem>
+              <MenuItem value="Search" sx={{ fontSize: '0.875rem' }}>
+                <Checkbox checked={selectedTabs.indexOf('Search') > -1} />
+                <ListItemText primary="Search" />
+              </MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Box>
+      {searchBoxVisible && (
+        <Paper
+          component="form"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            padding: '2px 4px',
+            mt: '0.25rem',
+            width: '100%',
+            borderRadius: 2,
+          }}
+        >
+          <InputBase
+            sx={{ ml: 1, flex: 1 }}
+            placeholder="Search Outputs"
+            inputProps={{ 'aria-label': 'search outputs' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)} // Update search query
+          />
+          <IconButton
+            aria-label="search"
+            onClick={handleSearchSubmit}
+            disabled={!searchQuery}
+          >
+            <SearchIcon />
+          </IconButton>
+          <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
+          <IconButton
+            aria-label="clear"
+            disabled={!searchQuery} // Disable the button if searchQuery is empty
+            onClick={() => {
+              setSearchQuery(''); // Clear the search query
+              const sortedOutputs = [...outputs].sort(
+                (a, b) => b.timestamp - a.timestamp
+              ); // Sort outputs by date in descending order
+              setOutputs(sortedOutputs); // Update the sorted outputs
             }}
           >
-            <MenuItem value="Summary" sx={{ fontSize: '0.875rem' }}>
-              <Checkbox checked={selectedTabs.indexOf('Summary') > -1} />
-              <ListItemText primary="Summary" />
-            </MenuItem>
-            <MenuItem value="Translation" sx={{ fontSize: '0.875rem' }}>
-              <Checkbox checked={selectedTabs.indexOf('Translation') > -1} />
-              <ListItemText primary="Translation" />
-            </MenuItem>
-            <MenuItem value="Composition" sx={{ fontSize: '0.875rem' }}>
-              <Checkbox checked={selectedTabs.indexOf('Composition') > -1} />
-              <ListItemText primary="Composition" />
-            </MenuItem>
-            <MenuItem value="Search" sx={{ fontSize: '0.875rem' }}>
-              <Checkbox checked={selectedTabs.indexOf('Search') > -1} />
-              <ListItemText primary="Search" />
-            </MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
+            <ClearIcon />
+          </IconButton>
+        </Paper>      
+      )}
+      <Divider
+        sx={{
+          my: '0.5rem',
+          mx: '0'
+        }}
+      />
       <Box sx={{ marginTop: 2 }}>
         {isGenerating && (
           <LoadingMessage isGenerating={isGenerating} />

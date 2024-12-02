@@ -3,209 +3,37 @@ import { promptSummarizeModel } from "./api/summarizeHandler";
 import { handleTranslation } from "./api/translateHandler";
 import { handleWrite } from "./api/writeHandler";
 import { handleRewrite, enhanceSearchQueries } from "./api/rewriteHandler";
-import { saveBookmark, deleteBookmark, saveOutput, deleteOutput, fetchOutputs, fetchBookmarks } from "./utils/db";
 import { loadSettings, saveSettings } from "./api/settingsStorage";
+import { saveBookmark, deleteBookmark, saveOutput, deleteOutput, fetchOutputs, fetchBookmarks, saveEmbedding, fetchEmbeddings } from "./utils/db";
+import { defaultSettings } from "./utils/constants";
+import { pipeline, cos_sim } from "@huggingface/transformers";
 import { v4 as uuidv4 } from "uuid";
-import { set } from "mongoose";
 
-const defaultSettings = {
-  prompt: {
-      available: { temperature: [0, 1], topK: [1, 8] },
-      temperature: 0.3,
-      topK: 5,
-  },
-  summarize: {
-      available: {
-          type: ["tl;dr", "key-points", "teaser", "headline"],
-          format: ["plain-text", "markdown"],
-          length: ["short", "medium", "long"],
-      },
-      type: "tl;dr",
-      format: "plain-text",
-      length: "medium",
-  },
-  rewrite: {
-      available: {
-          tone: ["as-is", "more-formal", "more-casual"],
-          format: ["as-is", "plain-text", "markdown"],
-          length: ["as-is", "shorter", "longer"],
-      },
-      tone: "as-is",
-      length: "as-is",
-      format: "as-is",
-      context: "I am.",
-  },
-  write: {
-      available: {
-          tone: ["formal", "neutral", "casual"],
-          format: ["plain-text", "markdown"],
-          length: ["short", "medium", "long"],
-      },
-      tone: "formal",
-      length: "medium",
-      format: "plain-text",
-      context: "I am.",
-  },
-  detect: {
-      languageMapping: {
-          af: "Afrikaans",
-          am: "Amharic",
-          ar: "Arabic",
-          "ar-Latn": "Arabic (Latin)",
-          az: "Azerbaijani",
-          be: "Belarusian",
-          bg: "Bulgarian",
-          "bg-Latn": "Bulgarian (Latin)",
-          bn: "Bengali",
-          bs: "Bosnian",
-          ca: "Catalan",
-          ceb: "Cebuano",
-          co: "Corsican",
-          cs: "Czech",
-          cy: "Welsh",
-          da: "Danish",
-          de: "German",
-          el: "Greek",
-          "el-Latn": "Greek (Latin)",
-          en: "English",
-          eo: "Esperanto",
-          es: "Spanish",
-          et: "Estonian",
-          eu: "Basque",
-          fa: "Persian",
-          fi: "Finnish",
-          fil: "Filipino",
-          fr: "French",
-          fy: "Frisian",
-          ga: "Irish",
-          gd: "Scottish Gaelic",
-          gl: "Galician",
-          gu: "Gujarati",
-          ha: "Hausa",
-          haw: "Hawaiian",
-          hi: "Hindi",
-          "hi-Latn": "Hindi (Latin)",
-          hmn: "Hmong",
-          hr: "Croatian",
-          ht: "Haitian Creole",
-          hu: "Hungarian",
-          hy: "Armenian",
-          id: "Indonesian",
-          ig: "Igbo",
-          is: "Icelandic",
-          it: "Italian",
-          iw: "Hebrew",
-          ja: "Japanese",
-          "ja-Latn": "Japanese (Latin)",
-          jv: "Javanese",
-          ka: "Georgian",
-          kk: "Kazakh",
-          km: "Khmer",
-          kn: "Kannada",
-          ko: "Korean",
-          ku: "Kurdish",
-          ky: "Kyrgyz",
-          la: "Latin",
-          lb: "Luxembourgish",
-          lo: "Lao",
-          lt: "Lithuanian",
-          lv: "Latvian",
-          mg: "Malagasy",
-          mi: "Maori",
-          mk: "Macedonian",
-          ml: "Malayalam",
-          mn: "Mongolian",
-          mr: "Marathi",
-          ms: "Malay",
-          mt: "Maltese",
-          my: "Burmese",
-          ne: "Nepali",
-          nl: "Dutch",
-          no: "Norwegian",
-          ny: "Chichewa",
-          pa: "Punjabi",
-          pl: "Polish",
-          ps: "Pashto",
-          pt: "Portuguese",
-          ro: "Romanian",
-          ru: "Russian",
-          "ru-Latn": "Russian (Latin)",
-          sd: "Sindhi",
-          si: "Sinhala",
-          sk: "Slovak",
-          sl: "Slovenian",
-          sm: "Samoan",
-          sn: "Shona",
-          so: "Somali",
-          sq: "Albanian",
-          sr: "Serbian",
-          st: "Sesotho",
-          su: "Sundanese",
-          sv: "Swedish",
-          sw: "Swahili",
-          ta: "Tamil",
-          te: "Telugu",
-          tg: "Tajik",
-          th: "Thai",
-          tr: "Turkish",
-          uk: "Ukrainian",
-          ur: "Urdu",
-          uz: "Uzbek",
-          vi: "Vietnamese",
-          xh: "Xhosa",
-          yi: "Yiddish",
-          yo: "Yoruba",
-          zh: "Chinese",
-          "zh-Latn": "Chinese (Latin)",
-          zu: "Zulu",
-      },
-  },
-  translate: {
-      languageMapping: {
-          en: "English",
-          es: "Spanish",
-          fr: "French",
-          de: "German",
-          ar: "Arabic",
-          bn: "Bengali",
-          hi: "Hindi",
-          it: "Italian",
-          ja: "Japanese",
-          ko: "Korean",
-          nl: "Dutch",
-          pl: "Polish",
-          pt: "Portuguese",
-          ru: "Russian",
-          th: "Thai",
-          tr: "Turkish",
-          vi: "Vietnamese",
-          zh: "Chinese (Simplified)",
-          "zh-Hant": "Chinese (Traditional)",
-      },
-      selectedLanguage: "en",
-  },
-  bookmark: {
-      available: {
-          type: ["tl;dr", "key-points", "teaser", "headline"],
-          format: ["plain-text", "markdown"],
-          length: ["short", "medium", "long"],
-          numKeywords: [1, 50],
-      },
-      type: "tl;dr",
-      format: "plain-text",
-      length: "long",
-      titlePrompt:"Generate a clear, concise title capturing the text's core theme, tone, and purpose, appealing to the intended audience. Return only the title." ,
-      keywordsPrompt: "Identify numKeywords relevant keywords that capture the text's main topics, themes, and concepts, enhancing discoverability and search relevance. Return only the keywords as an unordered list in HTML.",
-      numKeywords: 25,
-  },
-  search: {
-    available: {
-      numQueries: [1, 10],
-    },
-    prompt: "You are an advanced AI model designed to generate enhanced web search queries from user input.\nYour task is to understand the user's input prompt and craft numQueries sleek, concise web search queries to help the user find better results.\n\nKey Guidelines:\n- Focus only on relevant keywords that contribute directly to finding useful results.\n- Omit unnecessary or 'extra' words that add no value to the search process.\n- These queries should be phrases, not full sentences or questions.\n- Ensure the queries are highly specific, well-targeted, and optimized for web search engines.\nReturn the final numQueries web search queries as an unordered list.",
-    numQueries: 5,
+// Singleton class for the embedding pipeline
+class EmbeddingPipeline {
+  static task = 'feature-extraction';
+  static model = 'Xenova/all-MiniLM-L6-v2';
+  static instance = null;
+
+  static async getInstance(progress_callback = null) {
+    if (this.instance === null) {
+      this.instance = pipeline(this.task, this.model, { progress_callback });
+    }
+    return this.instance;
   }
-};
+}
+
+function convertFloat32ArraysToArrays(arrayOfFloat32Arrays) {
+  return arrayOfFloat32Arrays.reduce((accumulator, currentFloat32Array) => {
+      // Convert Float32Array to a regular JavaScript array using Array.from
+      const jsArray = Array.from(currentFloat32Array);
+
+      // Add the converted array to the accumulator
+      accumulator.push(jsArray);
+
+      return accumulator;
+  }, []);
+}
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL || details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
@@ -259,6 +87,28 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
+async function getEmbedding(text) {
+  const embedder = await EmbeddingPipeline.getInstance();
+  console.log("Embedding pipeline loaded successfully.");
+
+  const roundDecimalsDown = (num) => parseFloat(num.toFixed(3));
+
+  // Generate embeddings for text
+  let textEmbedding = embedder(text, { pooling: 'mean', normalize: true }).then((res) => res.data.map(roundDecimalsDown));
+
+  // Convert Float32Arrays to regular arrays
+  textEmbedding = convertFloat32ArraysToArrays([await textEmbedding]);
+
+  return textEmbedding;
+}
+
+async function embed(text, id) {
+  const textEmbedding = await getEmbedding(text);
+  await saveEmbedding({ 
+    id: id,
+    embedding: textEmbedding[0] 
+  });
+}
 // Handle the menu item and command
 async function handleMenuAndCommand(command, text) {
   if (command === "trigger-write") {
@@ -305,8 +155,9 @@ async function handleMenuAndCommand(command, text) {
     }
 
     if (outputData) {
-      // Save the output if we have generated data
+      // Save the output and embedding if we have generated data
       await saveOutput(outputData);
+      await embed(outputData.text, outputData.id);
     }
   } catch (error) {
     console.error("Error handling command:", error);
@@ -450,6 +301,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           type: 'Composition'
         };
         await saveOutput(outputData);
+        await embed(outputData.text, outputData.id);
         sendResponse(outputData);
       } else if (message.command === "rewrite") {
         const result = await handleRewrite(message.text);
@@ -461,6 +313,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           type: message.type || 'Composition'
         };
         await saveOutput(outputData);
+        await embed(outputData.text, outputData.id);
         sendResponse(outputData);
       } else if (message.command === "delete-output") {
         await deleteOutput(message.id);
@@ -479,6 +332,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           type: 'Search'
         };
         await saveOutput(outputData);
+        await embed(outputData.text, outputData.id);
         sendResponse(outputData);
       } else if (message.command === "get-settings") {
         const storedSettings = await loadSettings();
@@ -506,6 +360,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           let bookmarkedURLs = bookmarks.map(bookmark => bookmark.url);
           if (bookmarkedURLs.includes(activeTab.url)) {
             sendResponse({ response: "Bookmark already exists" });
+            console.warn("Bookmark already exists for the URL.");
             return;
           }
   
@@ -533,12 +388,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             ...result,
           };
           const response = await saveBookmark(bookmarkData);
+          await embed(result.tldr, bookmarkData.id);
           sendResponse(response);
         }
         catch(err){
           console.error("Error in bookmarking:", err);
           sendResponse({ error: err });
         }
+      } else if (message.command === "search") {
+        const query = message.query;
+        const queryEmbedding = await getEmbedding(query);
+        const storedEmbeddings = await fetchEmbeddings(message.ids);
+
+        console.log(storedEmbeddings.length + " embeddings fetched from the database.");
+
+        const messageIDsNotFound = message.ids.filter(id => !storedEmbeddings.map(embedding => embedding.id).includes(id)).map(id => (id));
+        // Perform similarity search, sort the ids and return the sorted ids as an array
+        let results = storedEmbeddings.map((embedding) => {
+          return {
+            id: embedding.id,
+            score: cos_sim(queryEmbedding[0], embedding.embedding),
+          };
+        });
+        results.sort((a, b) => b.score - a.score);
+        // Extract the ids from the sorted results
+        results = results.map(result => result.id);
+        // Append the ids that were not found in the database
+        results.push(...messageIDsNotFound.map(id => (id)));
+        console.log("Results sorted by similarity score:", results);
+        sendResponse(results);
       }
     }
     catch(err){

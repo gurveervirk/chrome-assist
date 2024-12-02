@@ -112,7 +112,13 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
   return (
     <div className="flex w-full flex-col items-center mx-auto p-3">
       <Navbar isGenerating={isGenerating} isBookmarking={isBookmarking} />
-      <Divider className="w-full mt-3" />
+      <Divider
+        sx={{
+          my: '0.5rem',
+          mx: '0',
+          width: '100%', 
+        }}
+      />
       <AnimatePresence mode="wait">
         <Routes>
           <Route

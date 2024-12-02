@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, IconButton, Select, MenuItem, Tooltip, Typography, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 
-const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
+const QuestionBox = ({ compose, enhanceQuery }) => {
   const [question, setQuestion] = useState("");
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true); // Track loading state
@@ -80,14 +79,13 @@ const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
   return (
     <Box
       sx={{
-        position: 'relative',
-        backgroundColor: 'background.default',
+        width: '100%',
+        height: '100%',
         padding: 2,
-        borderRadius: 1,
-        boxShadow: 3,
+        paddingTop: 0,
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography
           variant="h6"
           sx={{
@@ -101,9 +99,6 @@ const QuestionBox = ({ compose, closeBox, enhanceQuery }) => {
         >
           Compose
         </Typography>
-        <IconButton onClick={closeBox}>
-          <CloseIcon />
-        </IconButton>
       </Box>
       <TextField
         fullWidth

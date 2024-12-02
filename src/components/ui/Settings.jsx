@@ -1,7 +1,7 @@
 /* global chrome */
 
 import React, { useState, useEffect } from "react";
-import { MenuItem, IconButton, Select, Slider, TextField, FormControl, Typography, Box } from "@mui/material";
+import { MenuItem, IconButton, Select, Slider, TextField, FormControl, Typography, Box, Divider, InputLabel } from "@mui/material";
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
 
@@ -151,21 +151,47 @@ const Settings = () => {
   return (
     <Box
       sx={{
-        p: 4,
-        bgcolor: 'background.default',
-        color: 'text.primary',
-        borderRadius: 1,
-        boxShadow: 3,
+        width: '100%',
+        height: '100%',
+        padding: 2,
+        paddingTop: 0,
+        alignItems: 'center',
       }}
     >
-      <FormControl fullWidth className="mb-4">
-        <Typography variant="h6" sx={{
-          fontWeight: 'bold',
-          marginBottom: '1rem',
-        }}>
-          Select Functionality
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <Typography
+          variant="h6"
+          sx={{
+            background: 'linear-gradient(90deg, #4285F4, #EA4335)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            display: 'flex',
+            alignItems: 'flex-end',
+            lineHeight: 2,
+          }}
+        >
+          Settings
         </Typography>
-        <Select value={currentTab} onChange={handleTabChange}>
+        <IconButton
+          color="primary"
+          onClick={handleSave}
+        >
+          {saved ? <CheckIcon /> : <SaveIcon />} {/* Change icon based on saved state */}
+        </IconButton>
+      </Box>
+      <FormControl 
+        fullWidth
+        sx={{
+          my: '0.25rem'
+        }}
+      >
+        <InputLabel id="task-type-select-label">Task Type</InputLabel>
+        <Select 
+          value={currentTab} 
+          onChange={handleTabChange}
+          labelId="task-type-select-label"
+          label="Task Type"
+        >
           {/* Dropdown for selecting functionality */}
           {Object.keys(settings).map((tab) => (
             <MenuItem key={tab} value={tab}>
@@ -174,7 +200,13 @@ const Settings = () => {
           ))}
         </Select>
       </FormControl>
-      <hr className="my-4" />
+
+      <Divider
+        sx={{
+          my: '0.5rem',
+          mx: '0'
+        }}
+      />
 
       {settings[currentTab] && Object.entries(settings[currentTab]).map(([key, value]) => {
         if (key !== "available") {
@@ -182,15 +214,6 @@ const Settings = () => {
         }
         return null;
       })}
-
-      <div className="flex justify-end mt-4">
-        <IconButton
-          color="primary"
-          onClick={handleSave}
-        >
-          {saved ? <CheckIcon /> : <SaveIcon />} {/* Change icon based on saved state */}
-        </IconButton>
-      </div>
     </Box>
   );
 };

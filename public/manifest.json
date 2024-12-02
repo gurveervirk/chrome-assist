@@ -26,8 +26,12 @@
     "bookmarks",
     "sidePanel",
     "tabs",
-    "contextMenus"
+    "contextMenus",
+    "unlimitedStorage"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
+  },
   "host_permissions": ["https://*/*"],
   "commands": {
     "trigger-summarize": {
