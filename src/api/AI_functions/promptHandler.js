@@ -38,3 +38,16 @@ export const promptModel = async (systemPrompt, prompt) => {
 
   return marked.parse(fullResponse);
 };
+
+export const promptModelBase = async (systemPrompt, prompt) => {
+  if(session) session.destroy();
+  session = await ai.languageModel.create({
+    systemPrompt: systemPrompt,
+  });
+
+  const fullResponse = await session.prompt(prompt);
+
+  session.destroy();
+
+  return fullResponse;
+}

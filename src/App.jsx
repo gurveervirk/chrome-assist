@@ -91,7 +91,7 @@ const AppContent = ({ isGenerating, setIsGenerating, isBookmarking, setIsBookmar
     setIsGenerating(true);
     navigate('/output');
     try {
-      const response = new Promise((resolve, reject) => {
+      const response = await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({ command: "rewrite", text: message, id: messageID, type: messageType }, (response) => {
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));

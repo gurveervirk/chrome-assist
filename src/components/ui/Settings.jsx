@@ -108,27 +108,6 @@ const Settings = () => {
           </FormControl>
         </div>
       );
-    } else if (currentTab === "translate") {
-      return (
-        <div key={key} className="mb-4">
-          <Typography variant="body1" className="block mb-2" style={{ fontWeight: 'bold' }}>Select Preferred Language</Typography>
-          <FormControl fullWidth>
-            <Select
-              value={settings[currentTab].selectedLanguage}
-              onChange={(e) => {
-                const updatedSettings = { ...settings, [currentTab]: { ...settings[currentTab], selectedLanguage: e.target.value } };
-                setSettings(updatedSettings);
-              }}
-            >
-              {Object.entries(settings[currentTab].languageMapping).map(([code, name]) => (
-                <MenuItem key={code} value={code}>
-                  {name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </div>
-      );
     }
     return null;
   };

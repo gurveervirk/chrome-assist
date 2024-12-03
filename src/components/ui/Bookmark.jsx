@@ -168,14 +168,7 @@ const Bookmark = ({ isBookmarking, setIsBookmarking }) => {
           }
         });
       });
-      // Check for error response
-      if (result.error) {
-        setError(result.error);
-        setTimeout(() => setError(null), 3000);
-        setIsBookmarking(false);
-        return;
-      }
-      if (result.response && result.response === 'Bookmark already exists') {
+      if (result && 'response' in result && result.response === 'Bookmark already exists') {
         setError('Bookmark already exists');
         setTimeout(() => setError(null), 3000);
         setIsBookmarking(false);

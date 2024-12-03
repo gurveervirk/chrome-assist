@@ -172,7 +172,6 @@ export const defaultSettings = {
             zh: "Chinese (Simplified)",
             "zh-Hant": "Chinese (Traditional)",
         },
-        selectedLanguage: "en",
     },
     bookmark: {
         available: {

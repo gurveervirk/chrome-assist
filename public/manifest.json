@@ -19,6 +19,10 @@
       "js": ["contentScript.js"]
     }
   ],
+  "web_accessible_resources": [{
+    "resources": ["assets/voice-input.mp3"],
+    "matches": ["<all_urls>"]
+  }],
   "permissions": [
     "storage",
     "scripting",
@@ -27,7 +31,17 @@
     "sidePanel",
     "tabs",
     "contextMenus",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "alarms",
+    "clipboardWrite",
+    "clipboardRead",
+    "desktopCapture",
+    "fontSettings",
+    "history",
+    "readingList",
+    "notifications",
+    "downloads",
+    "webNavigation"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
@@ -67,5 +81,6 @@
       "48": "icons/android-chrome-192x192.png",
       "128": "icons/android-chrome-512x512.png"
     }
-  }
+  },
+  "minimum_chrome_version": "129"
 }

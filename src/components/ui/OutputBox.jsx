@@ -5,15 +5,15 @@ import { Box, Typography, IconButton, Tooltip, List, ListItem, ListItemText, Men
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
-import EditIcon from '@mui/icons-material/Edit';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import SearchIcon from '@mui/icons-material/Search';
 import InfoIcon from '@mui/icons-material/Info';
 import ClearIcon from '@mui/icons-material/Clear';
+import SendIcon from '@mui/icons-material/Send';
 import { motion, AnimatePresence } from 'framer-motion';
 import LoadingMessage from './LoadingMessage';
 import DOMPurify from "dompurify";
 import FlexSearch from "flexsearch";
-import { set } from 'mongoose';
 
 const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   const [copied, setCopied] = useState({});
@@ -23,15 +23,42 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
   const [searchBoxVisible, setSearchBoxVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredOutputs, setFilteredOutputs] = useState([]);
+  const [settings, setSettings] = useState({});
+  const [rewriteSettingsVisible, setRewriteSettingsVisible] = useState(null);
 
   const flexIndex = useRef(new FlexSearch.Document({
     tokenize: "full",
     document: {
       id: "id",
-      store: ["text"],
-      index: ["text"],
+      store: ["input", "text"],
+      index: ["input", "text"],
     },
   }));
+
+  // Load settings on component mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ command: "get-settings" }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+        // Handle rejected promise
+        if (response instanceof Error) {
+          throw response;
+        }
+        setSettings(response);
+      } catch (error) {
+        console.error("Error fetching settings", error);
+      }
+    };
+    fetchSettings();    
+  }, []);
 
   useEffect(() => {
     const loadOutputs = async () => {
@@ -57,6 +84,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
         response.forEach((output) => {
           flexIndex.current.add({
             id: output.id,
+            input: output.input.replace(/<[^>]*>?/gm, ''),
             text: output.text.replace(/<[^>]*>?/gm, ''),
           });
         });
@@ -128,10 +156,8 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     setTimeout(() => setCopied((prevCopied) => ({ ...prevCopied, [id]: false })), 2000);
   };
 
-  const handleRewrite = (text, id, type) => {
-    console.log('Rewrite:', text, id, type);
-    text = text.replace(/<[^>]*>?/gm, '');
-    handleTriggerRewrite(text, id, type);
+  const handleRewrite = (id) => {
+    rewriteSettingsVisible === id ? setRewriteSettingsVisible(null) : setRewriteSettingsVisible(id);
   };
 
   const handleDelete = async (id) => {
@@ -320,7 +346,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
                 </Tooltip>
                 <Tooltip title="Rewrite">
                   <IconButton
-                    onClick={() => handleRewrite(output.text, output.id, output.type)}
+                    onClick={() => handleRewrite(output.id)}
                     sx={{
                       color: '#1A73E8',
                       padding: 0.5,
@@ -328,7 +354,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
                     }}
                     aria-label="rewrite"
                   >
-                    <EditIcon fontSize='small'/>
+                    {rewriteSettingsVisible === output.id ? <ClearIcon fontSize='small'/> : <AutorenewIcon fontSize='small'/>}
                   </IconButton>
                 </Tooltip>
               </>
@@ -348,6 +374,60 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
               </Tooltip>
             </Box>
           </Box>
+          {rewriteSettingsVisible === output.id && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: '0.25rem', gap: 0.1 }}>
+              <InputLabel sx={{ fontSize: '0.4rem', color: '#888' }} id='rewrite-tone-select-label'>Tone</InputLabel>
+              <Select
+                labelId='rewrite-tone-select-label'
+                value={settings["rewrite"]?.tone || ""}
+                onChange={(e) => setSettings({ ...settings, "rewrite": { ...settings["rewrite"], tone: e.target.value } })}
+                sx={{ mr: 0.1, minWidth: 75, fontSize: '0.7rem', height: '1rem' }}
+                size="small"
+              >
+                {["as-is", "more-formal", "more-casual"].map((option) => (
+                  <MenuItem key={option} value={option} sx={{ fontSize: '0.7rem' }}>
+                    {option.charAt(0).toUpperCase() + option.slice(1).toLowerCase()}
+                  </MenuItem>
+                ))}
+              </Select>
+              <InputLabel sx={{ fontSize: '0.4rem', color: '#888' }} id='rewrite-length-select-label'>Length</InputLabel>
+              <Select
+                labelId='rewrite-length-select-label'
+                value={settings["rewrite"]?.length || ""}
+                onChange={(e) => setSettings({ ...settings, "rewrite": { ...settings["rewrite"], length: e.target.value } })}
+                sx={{ mr: 0.1, minWidth: 75, fontSize: '0.7rem', height: '1rem' }}
+                size="small"
+              >
+                {["as-is", "shorter", "longer"].map((option) => (
+                  <MenuItem key={option} value={option} sx={{ fontSize: '0.7rem' }}>
+                    {option.charAt(0).toUpperCase() + option.slice(1).toLowerCase()}
+                  </MenuItem>
+                ))}
+              </Select>
+              <InputLabel sx={{ fontSize: '0.4rem', color: '#888' }} id='rewrite-format-select-label'>Format</InputLabel>
+              <Select
+                labelId='rewrite-format-select-label'
+                value={settings["rewrite"]?.format || ""}
+                onChange={(e) => setSettings({ ...settings, "rewrite": { ...settings["rewrite"], format: e.target.value } })}
+                sx={{ mr: 0.1, minWidth: 75, fontSize: '0.7rem', height: '1rem' }}
+                size="small"
+              >
+                {["as-is", "plain-text", "markdown"].map((option) => (
+                  <MenuItem key={option} value={option} sx={{ fontSize: '0.7rem' }}>
+                    {option.charAt(0).toUpperCase() + option.slice(1).toLowerCase()}
+                  </MenuItem>
+                ))}
+              </Select>
+              <IconButton
+                variant="contained"
+                color="primary"
+                onClick={() => handleTriggerRewrite(output.text, output.id, output.type)}
+                sx={{ padding: 0.1 }}
+              >
+                <SendIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
           {content}
           <Typography variant="caption" sx={{ position: 'absolute', bottom: 8, right: 8, fontStyle: 'italic', color: '#888' }}>
             {new Date(output.timestamp).toLocaleString()}

@@ -10,10 +10,11 @@ export default defineConfig(() => {
         input: {
           main: resolve(__dirname, 'index.html'), // Your main app entry point
           background: resolve(__dirname, 'src/background.js'), // Background script entry point
+          contentScript: resolve(__dirname, 'src/contentScript.js'), // Content script entry point
         },
         output: {
           entryFileNames: (chunkInfo) => {
-            return chunkInfo.name === 'background' ? '[name].js' : 'assets/[name].[hash].js';
+            return (chunkInfo.name === 'background' || chunkInfo.name === 'contentScript') ? '[name].js' : 'assets/[name].[hash].js';
           },
         },
       },

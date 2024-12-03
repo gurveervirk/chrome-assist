@@ -1,9 +1,8 @@
-/* global chrome */
-import { promptSummarizeModel } from "./api/summarizeHandler";
-import { handleTranslation } from "./api/translateHandler";
-import { handleWrite } from "./api/writeHandler";
-import { handleRewrite, enhanceSearchQueries } from "./api/rewriteHandler";
-import { loadSettings, saveSettings } from "./api/settingsStorage";
+import { promptSummarizeModel } from "./api/AI_functions/summarizeHandler";
+import { handleWrite } from "./api/AI_functions/writeHandler";
+import { handleRewrite, enhanceSearchQueries } from "./api/AI_functions/rewriteHandler";
+import { loadSettings, saveSettings } from "./api/AI_functions/settingsStorage";
+import { parseCommand } from "./api/parser";
 import { saveBookmark, deleteBookmark, saveOutput, deleteOutput, fetchOutputs, fetchBookmarks, saveEmbedding, fetchEmbeddings } from "./utils/db";
 import { defaultSettings } from "./utils/constants";
 import { pipeline, cos_sim } from "@huggingface/transformers";
@@ -35,7 +34,21 @@ function convertFloat32ArraysToArrays(arrayOfFloat32Arrays) {
   }, []);
 }
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
+  for (const cs of chrome.runtime.getManifest().content_scripts) {
+    for (const tab of await chrome.tabs.query({url: cs.matches})) {
+      if (tab.url.match(/(chrome|chrome-extension):\/\//gi)) {
+        continue;
+      }
+      const target = {tabId: tab.id, allFrames: cs.all_frames};
+      if (cs.js[0]) chrome.scripting.executeScript({
+        files: cs.js,
+        injectImmediately: cs.run_at === 'document_start',
+        world: cs.world, // requires Chrome 111+
+        target,
+      });
+    }
+  }
   if (details.reason === chrome.runtime.OnInstalledReason.INSTALL || details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
     // Set default settings on installation
     chrome.storage.sync.set({ chromeAssistsettings: defaultSettings }, () => {
@@ -56,10 +69,24 @@ chrome.runtime.onInstalled.addListener((details) => {
 
     chrome.contextMenus.create({
       id: "trigger-translate",
-      title: "Translate Selection",
+      title: "Transliterate Selection",
       contexts: ["selection"], // Visible when text is selected
       documentUrlPatterns: ["*://*/*"] // Apply to all URLs
     });
+
+    const languages = defaultSettings.translate.languageMapping;
+
+    // Create sub-menu items for each language
+    for (const [code, language] of Object.entries(languages)) {
+      if (code === "en") continue; // Skip English as it's the default language
+      chrome.contextMenus.create({
+        id: `trigger-translate-${code}`,
+        title: `to ${language}`,
+        parentId: "trigger-translate", // Make this a sub-menu of "Translate Selection"
+        contexts: ["selection"], // Visible when text is selected
+        documentUrlPatterns: ["*://*/*"], // Apply to all URLs
+      });
+    }
 
     chrome.contextMenus.create({
       id: "trigger-rewrite",
@@ -133,16 +160,28 @@ async function handleMenuAndCommand(command, text) {
         type: 'Summary',
       };
     } 
-    else if (command === "trigger-translate") {
-      const result = await handleTranslation(text, "en");
+    else if (command.startsWith("trigger-translate")) {
+      const languageCode = command.split("-")[2];
+      console.log(`Translating to language code: ${languageCode}`);
+      const response = await new Promise((resolve, reject) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
+          chrome.tabs.sendMessage(tabs[0].id, { command: "translate-in-context-script", text, targetLanguage: languageCode }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+      });
       outputData = {
         id: uuidv4(),
         input: text,
-        text: result,
+        text: response,
         timestamp: new Date().toISOString(),
         type: 'Translation',
       };
-    } 
+    }
     else if (command === "trigger-rewrite") {
       const result = await handleRewrite(text);
       outputData = {
@@ -337,7 +376,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.command === "get-settings") {
         const storedSettings = await loadSettings();
         const filteredSettings = Object.keys(storedSettings)
-          .filter(key => key !== "detect")
+          .filter(key => key !== "detect" && key !== "translate")
           .reduce((obj, key) => {
             obj[key] = storedSettings[key];
             return obj;
@@ -417,6 +456,50 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         results.push(...messageIDsNotFound.map(id => (id)));
         console.log("Results sorted by similarity score:", results);
         sendResponse(results);
+      } else if (message.command === "summarize") {
+        let [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const text = await chrome.scripting.executeScript({
+          target: { tabId: activeTab.id },
+          func: () => {
+            const selection = window.getSelection();
+            return selection.toString();
+          }
+        });
+        const result = await promptSummarizeModel(text, false);
+        const outputData = {
+          id: uuidv4(),
+          input: text,
+          text: result,
+          timestamp: new Date().toISOString(),
+          type: 'Summary'
+        };
+        await saveOutput(outputData);
+        await embed(outputData.text, outputData.id);
+        sendResponse(outputData);
+      } else if (message.command === "translate") {
+        const response = await new Promise((resolve, reject) => {
+          chrome.runtime.sendMessage({ command: "translate-in-context-script", text: message.text, targetLanguage: message.targetLanguage }, (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(response);
+            }
+          });
+        });
+        const outputData = {
+          id: uuidv4(),
+          input: message.text,
+          text: response,
+          timestamp: new Date().toISOString(),
+          type: 'Translation'
+        };
+        await saveOutput(outputData);
+        await embed(outputData.text, outputData.id);
+        sendResponse(outputData);
+      } else if (message.command === "assist") {
+        const input = message.input;
+        const response = await parseCommand(input);
+        sendResponse(response);
       }
     }
     catch(err){

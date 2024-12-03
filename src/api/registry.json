@@ -1,0 +1,209 @@
+[
+  {
+    "name": "handleNavigation",
+    "description": "Navigate to a specific URL based on the user's input.",
+    "parameters": [
+      {
+        "name": "userPrompt",
+        "type": "string",
+        "description": "The user's navigation query (e.g., 'open settings', 'take me to Facebook')",
+        "required": true
+      }
+    ],
+    "examples": [
+      "open settings",
+      "search for cats on YouTube",
+      "take me to Facebook"
+    ],
+    "handler": "handleNavigation"
+  },
+  {
+    "name": "searchTabs",
+    "description": "Search open browser tabs based on a user's query and return relevant results.",
+    "parameters": [
+      {
+        "name": "query",
+        "type": "string",
+        "description": "The user's query to search for relevant open tabs.",
+        "required": true
+      }
+    ],
+    "examples": [
+      "find tabs related to cats",
+      "search for articles on JavaScript",
+      "show me the open tabs about weather"
+    ],
+    "handler": "searchTabs"
+  },
+  {
+    "name": "createReminder",
+    "description": "Create a reminder based on a user-provided time string. The time string can be relative (e.g., 'in 5 minutes') or absolute (e.g., 'tomorrow at 3pm').",
+    "parameters": [
+      {
+        "name": "content",
+        "type": "string",
+        "description": "The content of the reminder (e.g., 'Call Mom').",
+        "required": true
+      },
+      {
+        "name": "timestring",
+        "type": "string",
+        "description": "A human-readable time description (e.g., 'in 5 minutes' or 'tomorrow at 3pm').",
+        "required": true
+      }
+    ],
+    "examples": [
+      "remind me to call mom in 5 minutes",
+      "set a reminder for tomorrow at 3pm to attend meeting",
+      "create a reminder for in 2 hours to drink water"
+    ],
+    "handler": "createReminder"
+  },
+  {
+    "name": "addToReadingList",
+    "description": "Adds the current active tab to the user's reading list.",
+    "parameters": [],
+    "examples": [
+      "Add the current page to the reading list",
+      "Save this page for later reading"
+    ],
+    "handler": "addToReadingList"
+  },
+  {
+    "name": "toggleHighContrast",
+    "description": "Toggles the high contrast mode for all open tabs, excluding chrome:// URLs.",
+    "parameters": [
+      {
+        "name": "enable",
+        "type": "boolean",
+        "description": "A flag indicating whether to enable or disable high contrast mode.",
+        "required": true
+      }
+    ],
+    "examples": [
+      "Enable high contrast mode",
+      "Disable high contrast mode"
+    ],
+    "handler": "toggleHighContrast"
+  },
+  {
+    "name": "captureAndSaveScreenshot",
+    "description": "Captures a screenshot of the currently active tab, copies it to the clipboard, and triggers a download with a save-as dialog.",
+    "parameters": [],
+    "examples": [
+      "Capture a screenshot of the active tab",
+      "Take a screenshot and save it"
+    ],
+    "handler": "captureAndSaveScreenshot"
+  },
+  {
+    "name": "searchBookmarks",
+    "description": "Searches through all user bookmarks to find the most relevant ones based on the user's query.",
+    "parameters": [
+      {
+        "name": "query",
+        "type": "string",
+        "description": "The user's query to search for relevant bookmarks.",
+        "required": true
+      }
+    ],
+    "examples": [
+      "Find me bookmarks about JavaScript",
+      "Search for web development tutorials",
+      "Show me bookmarks related to Chrome extensions"
+    ],
+    "handler": "searchBookmarks"
+  },
+  {
+    "name": "searchHistory",
+    "description": "Searches through the browser history to find the most relevant items based on the user's query.",
+    "parameters": [
+      {
+        "name": "query",
+        "type": "string",
+        "description": "The user's query to search through the browsing history.",
+        "required": true
+      }
+    ],
+    "examples": [
+      "Find my history related to JavaScript",
+      "Search for websites I visited about programming",
+      "Show me the websites about AI"
+    ],
+    "handler": "searchHistory"
+  },
+  {
+    "name": "clearLast24HoursHistory",
+    "description": "Clears the browsing history of the last 24 hours.",
+    "parameters": [],
+    "examples": [
+      "Clear my browsing history from the last 24 hours",
+      "Delete history from the past day"
+    ],
+    "handler": "clearLast24HoursHistory"
+  },
+  {
+    "name": "clearAllHistory",
+    "description": "Clears all browsing history from the browser.",
+    "parameters": [],
+    "examples": [
+      "Clear my entire browsing history",
+      "Delete all browsing history"
+    ],
+    "handler": "clearAllHistory"
+  },
+  {
+    "name": "reopenLastClosedTab",
+    "description": "Restores the last closed tab or window.",
+    "parameters": [],
+    "examples": [
+      "Reopen the most recently closed tab.",
+      "Restore the last closed window."
+    ],
+    "handler": "reopenLastClosedTab"
+  },
+  {
+    "name": "toggleBionicReading",
+    "description": "Toggles the Bionic Reading mode on or off for the user.",
+    "parameters": [
+      {
+        "name": "enable",
+        "type": "boolean",
+        "description": "Determines whether Bionic Reading should be enabled or disabled.",
+        "required": true
+      }
+    ],
+    "examples": [
+      "Enable Bionic Reading mode.",
+      "Disable Bionic Reading mode."
+    ],
+    "handler": "toggleBionicReading"
+  },
+  {
+    "name": "adjustFontSize",
+    "description": "Adjusts the default font size for the user (either increase or decrease).",
+    "parameters": [
+      {
+        "name": "increase",
+        "type": "boolean",
+        "description": "If true, the font size will be increased. If false, it will be decreased.",
+        "required": true
+      }
+    ],
+    "examples": [
+      "Increase the font size.",
+      "Decrease the font size."
+    ],
+    "handler": "adjustFontSize"
+  },
+  {
+    "name": "resetFontSize",
+    "description": "Resets the font size to the default value (16px).",
+    "parameters": [],
+    "examples": [
+      "Reset the font size to default.",
+      "Restore the font size to 16px."
+    ],
+    "handler": "resetFontSize"
+  }        
+]
