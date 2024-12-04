@@ -1,6 +1,6 @@
 # 🌟 Chrome-Assist: Your On-Device Browser Assistant 🌟  
 
-Chrome-Assist is a powerful, **on-device Chrome extension** powered by **Gemini Nano**, designed to streamline your text-related tasks. With a few keyboard shortcuts, you can effortlessly **summarize**, **translate**, **rewrite**, and **compose** text directly in your Chrome browser.  
+Chrome-Assist is a powerful, **on-device Chrome extension** powered by **Gemini Nano**, designed to streamline your browsing and text-related tasks. With intuitive features and keyboard shortcuts, you can effortlessly **summarize**, **transliterate**, **rewrite**, **compose**, and even **explain the current webpage** directly in your Chrome browser.  
 
 ---
 
@@ -9,26 +9,29 @@ Chrome-Assist is a powerful, **on-device Chrome extension** powered by **Gemini 
 - 🔍 **Summarize Text**:  
   Quickly generate summaries in various formats, like **“tl;dr”** or **key points**.  
 
-- 🌐 **Translate Text**:  
-  Instantly translate selected text into a wide range of supported languages.  
+- 🌐 **Transliterate Text**:  
+  Convert selected text from **English to other languages** in real time using the transliteration feature.  
 
 - 📝 **Rewrite Text**:  
-  Adapt the tone or style of selected text to suit any context, such as formal, casual, or neutral.  
+  Adapt the tone or style of selected text to suit any context, such as **formal**, **casual**, or **neutral**.  
 
 - ✍️ **Compose Text**:  
-  Generate new content with customizable tones (formal, casual, neutral) and lengths.  
+  Generate new content with customizable tones (e.g., formal, casual, neutral) and lengths.  
+
+- 🗂️ **Explain the Current Webpage**:  
+  Ask Chrome-Assist to **explain the content of the webpage you're currently on** for a quick understanding.  
+
+- 📖 **Summarize Bookmarks**:  
+  Quickly recall articles with **titles, extracted keywords, and concise summaries**.  
+
+- 🔎 **Enhance Web Search Queries**:  
+  Use Gemini Nano to enrich search queries, offering **context-rich** and **discoverable** results.  
 
 - ⚙️ **Customizable Settings**:  
   Tailor output preferences for **length**, **tone**, and **format**.  
 
 - 🔒 **On-Device Processing**:  
   Ensures **privacy and security** by performing all operations locally on your device.  
-
-- 🔎 **Enhance Web Search Queries**:  
-  Use Gemini Nano to enrich search queries, offering **context-rich** and **discoverable** results.  
-
-- 📖 **Summarize Bookmarks**:  
-  Quickly recall articles with **titles, extracted keywords, and concise summaries**.  
 
 ---
 
@@ -61,7 +64,7 @@ Simply download the latest build from the **[Releases Section](https://github.co
 3. 🛡️ **Grant Necessary Permissions**:  
    Chrome-Assist requires permissions for **storage**, **scripting**, and **active tabs**.  
 
-You may also build the extension by cloning this repository and start from the 2nd step above.  
+You may also build the extension by cloning this repository and starting from the 2nd step above.  
 
 ---
 
@@ -73,10 +76,13 @@ You may also build the extension by cloning this repository and start from the 2
 3. ✅ The output will display in the side panel.  
 
 ### ⌨️ **Via Keyboard Shortcuts** (Only after opening the side panel):  
-- 🗂️ **Summarize**: `Alt + Shift + S`  
-- 🌐 **Translate**: `Alt + Shift + A`  
+- 🔍 **Summarize**: `Alt + Shift + S`  
 - ✏️ **Rewrite**: `Alt + Shift + R`  
-- 🖋️ **Compose**: `Alt + Shift + W`  
+- ✍️ **Compose**: `Alt + Shift + W`  
+
+### 🌐 **Explaining the Current Page**  
+1. Open the **side panel**.  
+2. Select the **Explain Page** option, or use the **text or voice input** on the homepage to trigger the explanation.  
 
 ---
 
@@ -86,7 +92,7 @@ For a quick walkthrough of Chrome-Assist's features, watch our **[YouTube Demo](
 
 ---
 
-💡 Experience the power of **privacy-focused AI Browser assistance** with **Chrome-Assist**!  
+💡 Experience the power of **privacy-focused AI browser assistance** with **Chrome-Assist**!  
 
 For more details on setup and features, visit the **[Wiki](https://github.com/gurveervirk/chrome-assist/wiki)**.  
 

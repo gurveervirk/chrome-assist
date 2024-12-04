@@ -1,5 +1,5 @@
 /* global chrome */
-import { searchHistory, clearAllHistory } from './browser_functions/history';
+import { searchHistory, clearAllHistory, clearLast24HoursHistory } from './browser_functions/history';
 import { searchBookmarks } from './browser_functions/searchBookmarks';
 import { searchTabs } from './browser_functions/tabs';
 import { handleNavigation } from './browser_functions/navigation';
@@ -9,6 +9,7 @@ import { createReminder } from './browser_functions/reminders';
 import { toggleHighContrast } from './browser_functions/toggleContrast';
 import { captureAndSaveScreenshot } from './browser_functions/screenshot';
 import { promptModelBase } from './AI_functions/promptHandler';
+import { explain } from './AI_functions/explain';
 import functionRegistry from './registry.json';
 
 const functionHandlers = {
@@ -24,7 +25,9 @@ const functionHandlers = {
     createReminder: createReminder,
     toggleHighContrast: toggleHighContrast,
     captureAndSaveScreenshot: captureAndSaveScreenshot,
-    clearAllHistory: clearAllHistory
+    clearAllHistory: clearAllHistory,
+    clearLast24HoursHistory: clearLast24HoursHistory,
+    explain: explain
 };
 
 export async function parseCommand(userInput) {

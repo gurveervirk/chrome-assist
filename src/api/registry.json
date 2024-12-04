@@ -205,5 +205,15 @@
       "Restore the font size to 16px."
     ],
     "handler": "resetFontSize"
-  }        
+  },
+  {
+    "name": "explain",
+    "description": "Explains the current page in a simplified manner.",
+    "parameters": [],
+    "examples": [
+      "Explain this page to me.",
+      "What is this page about?"
+    ],
+    "handler": "explain"
+  }
 ]
