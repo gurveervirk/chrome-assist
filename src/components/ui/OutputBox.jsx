@@ -209,6 +209,12 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
     }
   };
 
+  const openURL = (query) => {
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    console.log(url);
+    chrome.tabs.create({ url });
+  };
+
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     handleSearch(searchQuery);
@@ -227,8 +233,6 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
           {queries.map((query, index) => (
             <ListItem
               key={index}
-              button
-              onClick={() => handleSearch(query)}
               style={{
                 marginBottom: '1rem',
                 '&:hover': { backgroundColor: 'rgba(26, 115, 232, 0.1)' },
@@ -247,10 +251,7 @@ const OutputBox = ({ handleTriggerRewrite, isGenerating }) => {
                   <IconButton
                     edge="end"
                     aria-label="search"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSearch(query);
-                    }}
+                    onClick={(e) => openURL(query)}
                     style={{
                       color: '#1A73E8',
                     }}
